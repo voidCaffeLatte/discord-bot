@@ -1,0 +1,16 @@
+[package]
+name = "application"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+common = { path = "../common" }
+domain = { path = "../domain" }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+thiserror = { workspace = true }
+rand = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+base64 = { workspace = true }
+fluent = { workspace = true }

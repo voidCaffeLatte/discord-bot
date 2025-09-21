@@ -1,0 +1,10 @@
+[package]
+name = "common"
+version = { workspace = true }
+edition = { workspace = true }
+
+[dependencies]
+fluent = { workspace = true }
+intl-memoizer = { workspace = true }
+tracing = { workspace = true }
+chrono = { workspace = true }

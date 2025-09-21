@@ -1,0 +1,14 @@
+FROM ubuntu:24.04
+
+RUN apt-get update -y && apt-get upgrade -y
+RUN apt-get install -y \
+    curl \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    libopus-dev
+
+ENV RUST_VERSION=1.90.0
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
+
+WORKDIR /workspace

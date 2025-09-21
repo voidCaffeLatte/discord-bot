@@ -1,0 +1,22 @@
+services:
+  app:
+    container_name: discord-bot-development
+    image: discord-bot-development:1.0
+    build:
+      context: .
+      dockerfile: ./Dockerfile.development
+    env_file:
+      - ./.env.development
+    environment:
+      - CARGO_BUILD_TARGET_DIR=/tmp/target
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+      - type: volume
+        source: discord-bot-development-cargo-cache
+        target: /usr/local/cargo
+    working_dir: /workspace
+
+volumes:
+  discord-bot-development-cargo-cache:

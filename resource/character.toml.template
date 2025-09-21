@@ -1,0 +1,6 @@
+[[characters]]
+name = "キャラクター名"
+title = "肩書き"
+characteristics = [
+    "特徴", "男性", "プログラマ"
+]
