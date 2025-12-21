@@ -64,7 +64,7 @@ async fn main() {
 
     let gemini_api_key = std::env::var("GEMINI_API_KEY").expect("Environment variable \"GEMINI_API_KEY\" is specified");
     let ai_text_generation_gateway = Arc::new(GeminiTextGenerationGateway::new(
-        gemini_api_key, reqwest::Client::new(), "gemini-2.5-flash".to_string(),
+        gemini_api_key, reqwest::Client::new(), "gemini-3-flash-preview".to_string(),
     ));
 
     let twitch_app_client_id = std::env::var("TWITCH_APP_CLIENT_ID").expect("Environment variable \"TWITCH_APP_CLIENT_ID\" is specified");
