@@ -26,6 +26,7 @@ use infrastructure::gateway::open_ai_image_generation_gateway::OpenAIImageGenera
 use common::fluent_proxy::FluentProxy;
 use infrastructure::gateway::twitch::access_token_gateway::AccessTokenGateway;
 use infrastructure::gateway::you_tube;
+use infrastructure::repository::ai_chat;
 use infrastructure::repository::in_memory_ai_chat_history_repository::InMemoryAIChatHistoryRepository;
 use infrastructure::repository::in_memory_ai_chat_character_repository::InMemoryAIChatCharacterRepository;
 use infrastructure::repository::in_memory_ai_chat_activity_repository::InMemoryAIChatActivityRepository;
@@ -95,11 +96,13 @@ async fn main() {
     );
     let ai_chat_history_repository = Arc::new(InMemoryAIChatHistoryRepository::new());
     let ai_chat_activity_repository = Arc::new(InMemoryAIChatActivityRepository::new());
+    let ai_chat_character_relationship_repository = Arc::new(ai_chat::character::in_memory_relationship_repository::InMemoryRelationshipRepository::new());
     let chat_ai_use_case = Arc::new(ChatAIUseCase::new(
         ai_text_generation_gateway.clone(),
         ai_chat_character_repository.clone(),
         ai_chat_history_repository.clone(),
         ai_chat_activity_repository.clone(),
+        ai_chat_character_relationship_repository.clone(),
         fluent_proxy.clone(),
     ));
     let chat_ai_characters_use_case = Arc::new(

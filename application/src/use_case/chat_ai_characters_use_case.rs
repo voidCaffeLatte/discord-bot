@@ -84,7 +84,7 @@ impl ChatAICharactersUseCase {
         let user_prompt = self.fluent_proxy.get_message("ai-conversation--user-prompt", Some(&fluent_args));
         let messages = [Message::new(Role::User, user_prompt.to_string())];
 
-        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt).await?;
+        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt, None).await?;
 
         ai_chat_activity.increment_chat_count(at);
         self.ai_chat_activity_repository.set(ai_chat_activity);

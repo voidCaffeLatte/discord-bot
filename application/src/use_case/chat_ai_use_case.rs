@@ -6,17 +6,24 @@ use crate::repository::{ai_chat_activity_repository, ai_chat_character_repositor
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use fluent::fluent_args;
+use schemars::schema_for;
 use common::fluent_proxy::FluentProxy;
+use domain::model::ai_chat::character::relationship::Relationship;
 use domain::model::ai_chat_activity::AIChatActivity;
 use domain::model::ai_chat_character;
 use domain::model::ai_chat_history::{AIChatHistory, ChatEntry};
+use domain::value_object::ai_chat::character::likability;
+use domain::value_object::ai_chat::character::likability::Likability;
 use domain::value_object::ai_text::AIText;
+use crate::repository::ai_chat::character::relationship_repository;
+use crate::repository::ai_chat::character::relationship_repository::RelationshipRepository;
 
 pub struct ChatAIUseCase {
     ai_text_generation_gateway: Arc<dyn AITextGenerationGateway + Send + Sync>,
     ai_chat_character_repository: Arc<dyn AIChatCharacterRepository + Send + Sync>,
     ai_chat_history_repository: Arc<dyn AIChatHistoryRepository + Send + Sync>,
     ai_chat_activity_repository: Arc<dyn AIChatActivityRepository + Send + Sync>,
+    ai_chat_character_relationship_repository: Arc<dyn RelationshipRepository + Send + Sync>,
     fluent_proxy: Arc<FluentProxy>,
 }
 
@@ -28,6 +35,7 @@ impl ChatAIUseCase {
         ai_chat_character_repository: Arc<dyn AIChatCharacterRepository + Send + Sync>,
         ai_chat_history_repository: Arc<dyn AIChatHistoryRepository + Send + Sync>,
         ai_chat_activity_repository: Arc<dyn AIChatActivityRepository + Send + Sync>,
+        ai_chat_character_relationship_repository: Arc<dyn RelationshipRepository + Send + Sync>,
         fluent_proxy: Arc<FluentProxy>,
     ) -> Self {
         Self {
@@ -35,6 +43,7 @@ impl ChatAIUseCase {
             ai_chat_character_repository,
             ai_chat_history_repository,
             ai_chat_activity_repository,
+            ai_chat_character_relationship_repository,
             fluent_proxy,
         }
     }
@@ -78,9 +87,15 @@ impl ChatAIUseCase {
             })
             .collect();
 
+        let mut relationship = match self.ai_chat_character_relationship_repository.get(user_id, ai_chat_character.id()) {
+            Ok(relationship) => relationship,
+            Err(relationship_repository::Error::EntryNotFound(_, _)) => Relationship::with_key(user_id.to_string(), ai_chat_character.id().clone())
+        };
+
         let fluent_args = fluent_args![
             "name" => user_name,
             "message" => message,
+            "likability" => relationship.likability().value(),
         ];
         let user_prompt = self.fluent_proxy.get_message("ai-chat--user-prompt--body", Some(&fluent_args));
 
@@ -92,19 +107,31 @@ impl ChatAIUseCase {
         let fluent_args = fluent_args![
             "name" => ai_chat_character.character_name(),
             "title" => ai_chat_character.title(),
-            "characteristics" => ai_chat_character.characteristics().join(", ")
+            "characteristics" => ai_chat_character.characteristics().join(", "),
+            "base-likability" => Likability::BASE,
+            "min-likability" => Likability::MIN,
+            "max-likability" => Likability::MAX
         ];
         let system_prompt = self.fluent_proxy.get_message("ai-chat--system-prompt--body", Some(&fluent_args));
 
-        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt).await?;
+        let response_schema = Some(schema_for!(dto::Response));
+        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt, response_schema).await?;
+
+        let response = serde_json::from_str::<dto::Response>(result.text())?;
+
+        relationship.change_likability(response.likability_change)?;
+        self.ai_chat_character_relationship_repository.set(relationship);
 
         ai_chat_activity.increment_chat_count(at);
         self.ai_chat_activity_repository.set(ai_chat_activity);
 
-        ai_chat_history.add_chat_entry(ChatEntry { request: message.to_string(), response: result.text().to_string() });
+        ai_chat_history.add_chat_entry(ChatEntry { request: message.to_string(), response: response.message.clone() });
         self.ai_chat_history_repository.set(ai_chat_history);
 
-        Ok(UseCaseResult { ai_character_name: ai_chat_character.display_name().to_string(), ai_text: result })
+        // TODO: Avoid to regenerate AIText instance
+        let ai_text = AIText::new(response.message, result.web_references().cloned());
+
+        Ok(UseCaseResult { ai_character_name: ai_chat_character.display_name().to_string(), ai_text })
     }
 }
 
@@ -121,6 +148,25 @@ pub enum UseCaseError {
     #[error("character is not found")]
     CharacterNotFound,
 
+    #[error("invalid likability")]
+    InvalidLikability(#[from] likability::Error),
+
     #[error(transparent)]
     RequestError(#[from] GatewayError),
+
+    #[error(transparent)]
+    InvalidResponse(#[from] serde_json::Error),
+}
+
+mod dto {
+    use schemars::{JsonSchema};
+
+    #[derive(Debug, serde::Deserialize, serde::Serialize, JsonSchema)]
+    pub struct Response {
+        #[schemars(description = "Response message by ai chat character", example = "Hello!")]
+        pub message: String,
+
+        #[schemars(description = "Amount of change in likability based on messages from users")]
+        pub likability_change: i32,
+    }
 }

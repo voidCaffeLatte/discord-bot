@@ -2,6 +2,7 @@ use application::gateway::ai_text_generation_gateway::GatewayError;
 use application::gateway::ai_text_generation_gateway::{AITextGenerationGateway, Message, Role};
 use async_trait::async_trait;
 use domain::value_object::ai_text::{AIText, WebReference};
+use schemars::Schema;
 
 pub struct GeminiTextGenerationGateway {
     api_key: String,
@@ -27,7 +28,12 @@ impl GeminiTextGenerationGateway {
 
 #[async_trait]
 impl AITextGenerationGateway for GeminiTextGenerationGateway {
-    async fn generate_text(&self, messages: &[Message], system_instruction: &str) -> Result<AIText, GatewayError> {
+    async fn generate_text(
+        &self,
+        messages: &[Message],
+        system_instruction: &str,
+        response_schema: Option<Schema>,
+    ) -> Result<AIText, GatewayError> {
         let messages = messages.iter().map(
             |message| {
                 let role = match message.role()
@@ -54,10 +60,18 @@ impl AITextGenerationGateway for GeminiTextGenerationGateway {
             dto::Tool { google_search: None, url_context: Some(dto::UrlContext {}) },
         ];
 
+        let generation_config = response_schema.as_ref().map(|schema| {
+            dto::GenerationConfig {
+                response_mime_type: Some("application/json".to_string()),
+                response_json_schema: Some(schema.clone()),
+            }
+        });
+
         let request_message = dto::Request {
             contents: messages,
             tools: Some(tools),
             system_instruction: Some(system_message),
+            generation_config,
         };
 
         let response = self.http_client.post(self.api_url())
@@ -106,12 +120,15 @@ impl AITextGenerationGateway for GeminiTextGenerationGateway {
 }
 
 mod dto {
+    use schemars::Schema;
+
     #[derive(Debug, serde::Deserialize, serde::Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Request {
         pub contents: Vec<Content>,
         pub tools: Option<Vec<Tool>>,
         pub system_instruction: Option<Content>,
+        pub generation_config: Option<GenerationConfig>,
     }
 
     #[derive(Debug, serde::Deserialize)]
@@ -196,6 +213,13 @@ mod dto {
     #[derive(Debug, serde::Deserialize, serde::Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct UrlContext {}
+
+    #[derive(Debug, serde::Deserialize, serde::Serialize)]
+    #[serde(rename_all = "camelCase")]
+    pub struct GenerationConfig {
+        pub response_mime_type: Option<String>,
+        pub response_json_schema: Option<Schema>,
+    }
 
     #[derive(Debug, serde::Deserialize, serde::Serialize)]
     #[serde(rename_all = "camelCase")]

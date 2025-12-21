@@ -1,10 +1,16 @@
 use async_trait::async_trait;
-use thiserror::Error;
 use domain::value_object::ai_text::AIText;
+use schemars::Schema;
+use thiserror::Error;
 
 #[async_trait]
 pub trait AITextGenerationGateway {
-    async fn generate_text(&self, messages: &[Message], system_instruction: &str) -> Result<AIText, GatewayError>;
+    async fn generate_text(
+        &self,
+        messages: &[Message],
+        system_instruction: &str,
+        response_schema: Option<Schema>,
+    ) -> Result<AIText, GatewayError>;
 }
 
 #[derive(Debug)]

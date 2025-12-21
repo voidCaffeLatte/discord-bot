@@ -1,3 +1,4 @@
+#[derive(Clone, Debug)]
 pub struct AIText {
     text: String,
     web_references: Option<Vec<WebReference>>,
@@ -23,6 +24,7 @@ impl AIText {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct WebReference {
     title: String,
     url: String,
