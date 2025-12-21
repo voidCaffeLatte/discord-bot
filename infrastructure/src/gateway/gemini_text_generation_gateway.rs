@@ -1,8 +1,7 @@
+use application::gateway::ai_text_generation_gateway::GatewayError;
+use application::gateway::ai_text_generation_gateway::{AITextGenerationGateway, Message, Role};
 use async_trait::async_trait;
 use domain::value_object::ai_text::{AIText, WebReference};
-use application::gateway::ai_text_generation_gateway::{AITextGenerationGateway, Message, Role};
-use application::gateway::ai_text_generation_gateway::GatewayError;
-use crate::gateway::gemini_text_generation_gateway::dto::{GoogleSearch, Tool, UrlContext};
 
 pub struct GeminiTextGenerationGateway {
     api_key: String,
@@ -22,7 +21,7 @@ impl GeminiTextGenerationGateway {
     }
 
     fn api_url(&self) -> String {
-        format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}", self.model_name, self.api_key)
+        format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent", self.model_name)
     }
 }
 
@@ -51,8 +50,8 @@ impl AITextGenerationGateway for GeminiTextGenerationGateway {
         };
 
         let tools = vec![
-            Tool { google_search: Some(GoogleSearch {}), url_context: None },
-            Tool { google_search: None, url_context: Some(UrlContext {}) },
+            dto::Tool { google_search: Some(dto::GoogleSearch {}), url_context: None },
+            dto::Tool { google_search: None, url_context: Some(dto::UrlContext {}) },
         ];
 
         let request_message = dto::Request {
@@ -63,6 +62,7 @@ impl AITextGenerationGateway for GeminiTextGenerationGateway {
 
         let response = self.http_client.post(self.api_url())
             .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .header("x-goog-api-key", &self.api_key)
             .body(serde_json::to_string(&request_message).unwrap())
             .send()
             .await?
@@ -183,7 +183,9 @@ mod dto {
     #[derive(Debug, serde::Deserialize, serde::Serialize)]
     #[serde(rename_all = "camelCase")]
     pub struct Tool {
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub google_search: Option<GoogleSearch>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         pub url_context: Option<UrlContext>,
     }
 
