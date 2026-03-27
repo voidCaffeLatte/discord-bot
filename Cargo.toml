@@ -9,6 +9,7 @@ members = [
     "domain",
     "application",
     "infrastructure",
+    "lib/gemini",
 ]
 
 [workspace.package]

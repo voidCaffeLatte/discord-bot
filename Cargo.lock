@@ -638,6 +638,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "gemini"
+version = "1.0.0"
+dependencies = [
+ "reqwest 0.12.23",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.16",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1069,6 +1080,7 @@ dependencies = [
  "common",
  "dashmap 6.1.0",
  "domain",
+ "gemini",
  "iso8601",
  "reqwest 0.12.23",
  "schemars",
