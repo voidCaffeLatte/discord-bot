@@ -53,7 +53,7 @@ impl GeminiClient {
         )
     }
 
-    pub async fn generate_content(
+    pub async fn generate_text(
         &self,
         request: &types::Request,
     ) -> Result<types::Response, GeminiError> {
@@ -64,7 +64,7 @@ impl GeminiClient {
         Ok(types::Response { text, grounding })
     }
 
-    pub async fn generate_content_structured<T>(
+    pub async fn generate_structured_text<T>(
         &self,
         request: &types::Request,
     ) -> Result<types::StructuredResponse<T>, GeminiError>

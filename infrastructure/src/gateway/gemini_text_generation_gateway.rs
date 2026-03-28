@@ -58,7 +58,7 @@ impl AITextGenerationGateway for GeminiTextGenerationGateway {
         system_instruction: &str,
     ) -> Result<AIText, GatewayError> {
         let request = Self::build_request(messages, system_instruction);
-        let response = self.client.generate_content(&request).await.map_err(Self::map_error)?;
+        let response = self.client.generate_text(&request).await.map_err(Self::map_error)?;
         let web_references = Self::extract_web_references(response.grounding);
 
         Ok(AIText::new(response.text, web_references))
@@ -76,7 +76,7 @@ where
         system_instruction: &str,
     ) -> Result<StructuredAIText<T>, GatewayError> {
         let request = Self::build_request(messages, system_instruction);
-        let response = self.client.generate_content_structured::<T>(&request).await.map_err(Self::map_error)?;
+        let response = self.client.generate_structured_text::<T>(&request).await.map_err(Self::map_error)?;
         let web_references = Self::extract_web_references(response.grounding);
 
         Ok(StructuredAIText::new(response.data, web_references))
