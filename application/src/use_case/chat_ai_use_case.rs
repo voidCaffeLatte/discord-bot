@@ -1,4 +1,5 @@
-use crate::gateway::ai_text_generation_gateway::{AITextGenerationGateway, GatewayError, Message, Role};
+use crate::gateway::ai_structured_text_generation_gateway::AIStructuredTextGenerationGateway;
+use crate::gateway::ai_text_generation_gateway::{GatewayError, Message, Role};
 use crate::repository::ai_chat_activity_repository::AIChatActivityRepository;
 use crate::repository::ai_chat_character_repository::AIChatCharacterRepository;
 use crate::repository::ai_chat_history_repository::AIChatHistoryRepository;
@@ -6,7 +7,6 @@ use crate::repository::{ai_chat_activity_repository, ai_chat_character_repositor
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use fluent::fluent_args;
-use schemars::schema_for;
 use common::fluent_proxy::FluentProxy;
 use domain::model::ai_chat::character::relationship::Relationship;
 use domain::model::ai_chat_activity::AIChatActivity;
@@ -19,7 +19,7 @@ use crate::repository::ai_chat::character::relationship_repository;
 use crate::repository::ai_chat::character::relationship_repository::RelationshipRepository;
 
 pub struct ChatAIUseCase {
-    ai_text_generation_gateway: Arc<dyn AITextGenerationGateway + Send + Sync>,
+    ai_text_generation_gateway: Arc<dyn AIStructuredTextGenerationGateway<dto::Response> + Send + Sync>,
     ai_chat_character_repository: Arc<dyn AIChatCharacterRepository + Send + Sync>,
     ai_chat_history_repository: Arc<dyn AIChatHistoryRepository + Send + Sync>,
     ai_chat_activity_repository: Arc<dyn AIChatActivityRepository + Send + Sync>,
@@ -31,7 +31,7 @@ impl ChatAIUseCase {
     pub const MAX_CHAT_COUNT_PER_USER: u32 = 10;
 
     pub fn new(
-        ai_text_generation_gateway: Arc<dyn AITextGenerationGateway + Send + Sync>,
+        ai_text_generation_gateway: Arc<dyn AIStructuredTextGenerationGateway<dto::Response> + Send + Sync>,
         ai_chat_character_repository: Arc<dyn AIChatCharacterRepository + Send + Sync>,
         ai_chat_history_repository: Arc<dyn AIChatHistoryRepository + Send + Sync>,
         ai_chat_activity_repository: Arc<dyn AIChatActivityRepository + Send + Sync>,
@@ -114,10 +114,8 @@ impl ChatAIUseCase {
         ];
         let system_prompt = self.fluent_proxy.get_message("ai-chat--system-prompt--body", Some(&fluent_args));
 
-        let response_schema = Some(schema_for!(dto::Response));
-        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt, response_schema).await?;
-
-        let response = serde_json::from_str::<dto::Response>(result.text())?;
+        let result = self.ai_text_generation_gateway.generate_structured_text(&messages, &system_prompt).await?;
+        let (response, web_references) = result.into_parts();
 
         relationship.change_likability(response.likability_change)?;
         self.ai_chat_character_relationship_repository.set(relationship);
@@ -128,8 +126,7 @@ impl ChatAIUseCase {
         ai_chat_history.add_chat_entry(ChatEntry { request: message.to_string(), response: response.message.clone() });
         self.ai_chat_history_repository.set(ai_chat_history);
 
-        // TODO: Avoid to regenerate AIText instance
-        let ai_text = AIText::new(response.message, result.web_references().cloned());
+        let ai_text = AIText::new(response.message, web_references);
 
         Ok(UseCaseResult { ai_character_name: ai_chat_character.display_name().to_string(), ai_text })
     }
@@ -153,9 +150,6 @@ pub enum UseCaseError {
 
     #[error(transparent)]
     RequestError(#[from] GatewayError),
-
-    #[error(transparent)]
-    InvalidResponse(#[from] serde_json::Error),
 }
 
 mod dto {
