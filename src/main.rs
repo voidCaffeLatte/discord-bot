@@ -22,7 +22,7 @@ use crate::presentation::command::CommandFactory;
 use crate::presentation::modal_interaction::ModalInteractionFactory;
 use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
 use infrastructure::gateway::gemini_text_generation_gateway::GeminiTextGenerationGateway;
-use infrastructure::gateway::open_ai_image_generation_gateway::OpenAIImageGenerationGateway;
+use infrastructure::gateway::gemini_image_generation_gateway::GeminiImageGenerationGateway;
 use common::fluent_proxy::FluentProxy;
 use infrastructure::gateway::twitch::access_token_gateway::AccessTokenGateway;
 use infrastructure::gateway::you_tube;
@@ -65,7 +65,7 @@ async fn main() {
 
     let gemini_api_key = std::env::var("GEMINI_API_KEY").expect("Environment variable \"GEMINI_API_KEY\" is specified");
     let ai_text_generation_gateway = Arc::new(GeminiTextGenerationGateway::new(
-        gemini_api_key, reqwest::Client::new(), "gemini-3-flash-preview".to_string(),
+        gemini_api_key.clone(), reqwest::Client::new(), "gemini-3-flash-preview".to_string(),
     ));
 
     let twitch_app_client_id = std::env::var("TWITCH_APP_CLIENT_ID").expect("Environment variable \"TWITCH_APP_CLIENT_ID\" is specified");
@@ -113,14 +113,12 @@ async fn main() {
             fluent_proxy.clone(),
         ));
 
-    let open_ai_api_key = std::env::var("OPENAI_API_KEY").expect("Environment variable \"OPENAI_API_KEY\" is specified");
-    let open_ai_image_generation_gateway = Arc::new(OpenAIImageGenerationGateway::new(
-        open_ai_api_key.clone(),
-        http_client.clone(),
+    let gemini_image_generation_gateway = Arc::new(GeminiImageGenerationGateway::new(
+        gemini_api_key, reqwest::Client::new(), "gemini-3.1-flash-image-preview".to_string(),
     ));
     let image_generation_activity_repository = Arc::new(InMemoryImageGenerationActivityRepository::new());
     let generate_ai_image_use_case = Arc::new(GenerateAIImageUseCase::new(
-        open_ai_image_generation_gateway.clone(),
+        gemini_image_generation_gateway.clone(),
         image_generation_activity_repository.clone(),
     ));
 
