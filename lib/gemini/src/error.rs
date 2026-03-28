@@ -8,4 +8,7 @@ pub enum GeminiError {
 
     #[error("candidate contained no text")]
     NoText,
+
+    #[error(transparent)]
+    JsonParseError(#[from] serde_json::Error),
 }

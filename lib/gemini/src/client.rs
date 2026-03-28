@@ -35,6 +35,25 @@ impl GeminiClient {
         Ok(types::Response { text, grounding })
     }
 
+    pub async fn generate_content_structured<T>(
+        &self,
+        request: &types::Request,
+    ) -> Result<types::StructuredResponse<T>, GeminiError>
+    where
+        T: schemars::JsonSchema + serde::de::DeserializeOwned,
+    {
+        let generation_config = dto::GenerationConfig {
+            response_mime_type: Some("application/json".to_string()),
+            response_json_schema: Some(schemars::schema_for!(T)),
+        };
+        let dto_request = self.build_dto_request(request, Some(generation_config));
+        let dto_response = self.send_request(&dto_request).await?;
+        let (text, grounding) = self.extract_response(&dto_response)?;
+        let data: T = serde_json::from_str(&text)?;
+
+        Ok(types::StructuredResponse { data, grounding })
+    }
+
     async fn send_request(
         &self,
         request: &dto::Request,

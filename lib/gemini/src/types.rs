@@ -34,6 +34,12 @@ pub struct Response {
 }
 
 #[derive(Debug)]
+pub struct StructuredResponse<T> {
+    pub data: T,
+    pub grounding: Option<Grounding>,
+}
+
+#[derive(Debug)]
 pub struct Grounding {
     pub chunks: Vec<GroundingChunk>,
     pub web_search_queries: Vec<String>,
