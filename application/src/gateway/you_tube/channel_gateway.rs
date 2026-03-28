@@ -13,7 +13,7 @@ pub trait ChannelGateway {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("retrieval failed")]
-    RetrievalFailed(#[source] reqwest::Error),
+    RetrievalFailed(#[source] anyhow::Error),
 
     #[error("invalid response")]
     InvalidResponse,

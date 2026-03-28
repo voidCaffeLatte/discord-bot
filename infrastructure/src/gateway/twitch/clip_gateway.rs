@@ -10,7 +10,7 @@ use common::cached_value::CachedValue;
 use domain::value_object::twitch::clip::Clip;
 
 pub struct ClipGateway {
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
     twitch_app_client_id: String,
     twitch_access_token_gateway: Arc<twitch::access_token_gateway::AccessTokenGateway>,
     cached_clips: DashMap<String, CachedValue<Arc<Vec<Clip>>>>,
@@ -23,7 +23,7 @@ impl ClipGateway {
     const CACHE_AVAILABLE_HOURS: i64 = 24;
 
     pub fn new(
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
         twitch_app_client_id: String,
         twitch_access_token_gateway: Arc<twitch::access_token_gateway::AccessTokenGateway>,
     ) -> Self {
@@ -68,7 +68,7 @@ impl clip_gateway::ClipGateway for ClipGateway {
                 .query(&query_parameters)
                 .send()
                 .await
-                .map_err(clip_gateway::Error::RetrievalFailed)?
+                .map_err(|e| clip_gateway::Error::RetrievalFailed(e.into()))?
                 .json::<dto::Response>()
                 .await
                 .map_err(|_error| clip_gateway::Error::InvalidResponse)?;
@@ -141,7 +141,7 @@ mod dto {
 impl From<twitch::access_token_gateway::Error> for clip_gateway::Error {
     fn from(value: twitch::access_token_gateway::Error) -> Self {
         match value {
-            twitch::access_token_gateway::Error::APIRequestFailed(error) => clip_gateway::Error::RetrievalFailed(error),
+            twitch::access_token_gateway::Error::APIRequestFailed(error) => clip_gateway::Error::RetrievalFailed(error.into()),
         }
     }
 }

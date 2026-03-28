@@ -13,12 +13,12 @@ pub struct Image {
 
 #[derive(Debug, Error)]
 pub enum GatewayError {
-    #[error(transparent)]
-    APIRequestFailed(#[from] reqwest::Error),
+    #[error("request failed")]
+    RequestFailed(#[source] anyhow::Error),
 
-    #[error("failed to generate images")]
+    #[error("generation failed")]
     GenerationFailed,
 
-    #[error(transparent)]
-    ImageDecodingFailed(#[from] base64::DecodeError),
+    #[error("invalid response")]
+    InvalidResponse(#[source] anyhow::Error),
 }

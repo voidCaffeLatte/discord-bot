@@ -10,7 +10,7 @@ use common::cached_value::CachedValue;
 
 pub struct PlaylistItemGateway {
     you_tube_data_api_key: String,
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
     playlist_caches: DashMap<String, CachedValue<Arc<Vec<PlaylistItem>>>>,
 }
 
@@ -22,7 +22,7 @@ impl PlaylistItemGateway {
 
     pub fn new(
         you_tube_data_api_key: String,
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
     ) -> Self {
         Self {
             you_tube_data_api_key,
@@ -55,7 +55,7 @@ impl application::gateway::you_tube::playlist_item_gateway::PlaylistItemGateway 
                 .query(&queries)
                 .send()
                 .await
-                .map_err(Error::RetrievalFailed)?
+                .map_err(|e| Error::RetrievalFailed(e.into()))?
                 .json::<dto::Response>()
                 .await
                 .map_err(|_error| Error::InvalidResponse)?;

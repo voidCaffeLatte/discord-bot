@@ -1,11 +1,11 @@
 use application;
 use application::gateway::you_tube::video_gateway::Error;
 use domain::value_object::you_tube::video::Video;
-use std::sync::Arc;
+
 
 pub struct VideoGateway {
     you_tube_data_api_key: String,
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
 }
 
 impl VideoGateway {
@@ -13,7 +13,7 @@ impl VideoGateway {
 
     pub fn new(
         you_tube_data_api_key: String,
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
     ) -> Self {
         Self {
             you_tube_data_api_key,
@@ -35,7 +35,7 @@ impl application::gateway::you_tube::video_gateway::VideoGateway for VideoGatewa
             .query(&queries)
             .send()
             .await
-            .map_err(Error::RetrievalFailed)?
+            .map_err(|e| Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
             .map_err(|_error| Error::InvalidResponse)?;

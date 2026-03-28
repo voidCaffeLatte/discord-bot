@@ -36,14 +36,13 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 name = "application"
 version = "1.0.0"
 dependencies = [
+ "anyhow",
  "async-trait",
- "base64",
  "chrono",
  "common",
  "domain",
  "fluent",
  "rand 0.10.0",
- "reqwest 0.13.2",
  "schemars",
  "serde",
  "serde_json",

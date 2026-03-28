@@ -62,7 +62,7 @@ async fn main() {
 
     // Setup dependencies
 
-    let http_client = Arc::new(reqwest::Client::new());
+    let http_client = reqwest::Client::new();
 
     let gemini_api_key = std::env::var("GEMINI_API_KEY").expect("Environment variable \"GEMINI_API_KEY\" is specified");
     let gemini_text_client = GeminiClient::new(
@@ -212,7 +212,7 @@ struct Handler {
     command_factories: HashMap<String, Box<dyn CommandFactory + Send + Sync>>,
     modal_interaction_factories: HashMap<String, Box<dyn ModalInteractionFactory + Send + Sync>>,
     running_users: DashSet<String>,
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
     fluent_proxy: Arc<FluentProxy>,
 }
 
@@ -220,7 +220,7 @@ impl Handler {
     fn new(
         command_factories: HashMap<String, Box<dyn CommandFactory + Send + Sync>>,
         modal_interaction_factories: HashMap<String, Box<dyn ModalInteractionFactory + Send + Sync>>,
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
         fluent_proxy: Arc<FluentProxy>,
     ) -> Self {
         Self {

@@ -1,12 +1,11 @@
 use application;
 use application::gateway::you_tube::channel_gateway::Error;
-use std::sync::Arc;
 use domain::value_object::you_tube::channel::Channel;
 use domain::value_object::you_tube::channel_handle::ChannelHandle;
 
 pub struct ChannelGateway {
     you_tube_data_api_key: String,
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
 }
 
 impl ChannelGateway {
@@ -14,7 +13,7 @@ impl ChannelGateway {
 
     pub fn new(
         you_tube_data_api_key: String,
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
     ) -> Self {
         Self {
             you_tube_data_api_key,
@@ -30,7 +29,7 @@ impl application::gateway::you_tube::channel_gateway::ChannelGateway for Channel
             .query(&[("key", self.you_tube_data_api_key.as_str()), ("part", "id,contentDetails,snippet"), ("forHandle", handle.handle())])
             .send()
             .await
-            .map_err(Error::RetrievalFailed)?
+            .map_err(|e| Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
             .map_err(|_error| Error::InvalidResponse)?;

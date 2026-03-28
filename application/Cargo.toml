@@ -8,10 +8,9 @@ common = { path = "../common" }
 domain = { path = "../domain" }
 chrono = { workspace = true }
 thiserror = { workspace = true }
+anyhow = { workspace = true }
 rand = { workspace = true }
 async-trait = { workspace = true }
-reqwest = { workspace = true }
-base64 = { workspace = true }
 fluent = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

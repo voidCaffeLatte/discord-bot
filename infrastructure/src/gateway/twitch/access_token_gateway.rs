@@ -1,11 +1,10 @@
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
-use std::sync::Arc;
 use tokio::sync::Mutex;
 use domain::value_object::twitch::access_token::AccessToken;
 
 pub struct AccessTokenGateway {
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
     app_client_id: String,
     app_client_secret: String,
     access_token: Mutex<Option<AccessToken>>,
@@ -16,7 +15,7 @@ impl AccessTokenGateway {
     const VALIDATE_API_BASE_URL: &'static str = "https://id.twitch.tv/oauth2/validate";
 
     pub fn new(
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
         app_client_id: String,
         app_client_secret: String,
     ) -> Self {

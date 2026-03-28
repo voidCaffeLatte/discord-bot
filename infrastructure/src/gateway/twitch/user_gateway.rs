@@ -9,7 +9,7 @@ use domain::value_object::twitch::user_login_id::UserLoginId;
 use application::gateway::twitch::user_gateway;
 
 pub struct UserGateway {
-    http_client: Arc<reqwest::Client>,
+    http_client: reqwest::Client,
     twitch_app_client_id: String,
     twitch_access_token_gateway: Arc<twitch::access_token_gateway::AccessTokenGateway>,
 }
@@ -18,7 +18,7 @@ impl UserGateway {
     const BASE_URL: &'static str = "https://api.twitch.tv/helix/users";
 
     pub fn new(
-        http_client: Arc<reqwest::Client>,
+        http_client: reqwest::Client,
         twitch_app_client_id: String,
         twitch_access_token_gateway: Arc<twitch::access_token_gateway::AccessTokenGateway>,
     ) -> Self {
@@ -49,7 +49,7 @@ impl user_gateway::UserGateway for UserGateway {
             .query(&query_parameters)
             .send()
             .await
-            .map_err(user_gateway::Error::RetrievalFailed)?
+            .map_err(|e| user_gateway::Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
             .map_err(|_error| user_gateway::Error::InvalidResponse)?;
@@ -82,7 +82,7 @@ mod dto {
 impl From<twitch::access_token_gateway::Error> for user_gateway::Error {
     fn from(value: twitch::access_token_gateway::Error) -> Self {
         match value {
-            twitch::access_token_gateway::Error::APIRequestFailed(error) => user_gateway::Error::RetrievalFailed(error),
+            twitch::access_token_gateway::Error::APIRequestFailed(error) => user_gateway::Error::RetrievalFailed(error.into()),
         }
     }
 }

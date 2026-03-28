@@ -46,8 +46,8 @@ impl Message {
 
 #[derive(Debug, Error)]
 pub enum GatewayError {
-    #[error(transparent)]
-    APIRequestFailed(#[from] reqwest::Error),
+    #[error("request failed")]
+    RequestFailed(#[source] anyhow::Error),
 
     #[error("invalid response")]
     InvalidResponse,
