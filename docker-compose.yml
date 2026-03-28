@@ -1,6 +1,8 @@
 services:
   app:
     container_name: discord-bot-development
+    tty: true
+    stdin_open: true
     image: discord-bot-development:1.0
     build:
       context: .
