@@ -25,17 +25,33 @@ pub enum Error {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
+    use rstest::rstest;
 
-    mod try_new {
-        use super::*;
+    #[rstest]
+    #[case("abc")]
+    #[case("あいう")]
+    fn try_new_should_accept_at_min_length(#[case] input: &str) {
+        let handle = ChannelHandle::try_new(input.to_string()).unwrap();
+        assert_eq!(handle.handle(), input);
+    }
 
-        #[test]
-        fn should_return_error_when_handle_length_is_invalid() {
-            assert!(matches!(ChannelHandle::try_new("".to_string()), Err(Error::InvalidLength(_, _, 0))));
-            assert!(matches!(ChannelHandle::try_new("aあ".to_string()), Err(Error::InvalidLength(_, _, 2))));
-            assert!(matches!(ChannelHandle::try_new("aあaあaあaあaあaあaあaあaあaあaあaあaあaあaあa".to_string()), Err(Error::InvalidLength(_, _, 31))));
-        }
+    #[test]
+    fn try_new_should_accept_at_max_length() {
+        let input = "a".repeat(ChannelHandle::MAX_LENGTH);
+        let handle = ChannelHandle::try_new(input.clone()).unwrap();
+        assert_eq!(handle.handle(), input);
+    }
+
+    #[rstest]
+    #[case("", 0)]
+    #[case("aあ", 2)]
+    #[case("aあaあaあaあaあaあaあaあaあaあaあaあaあaあaあa", 31)]
+    fn try_new_should_reject_invalid_length(#[case] input: &str, #[case] expected_len: usize) {
+        assert!(matches!(
+            ChannelHandle::try_new(input.to_string()),
+            Err(Error::InvalidLength(_, _, len)) if len == expected_len
+        ));
     }
 }

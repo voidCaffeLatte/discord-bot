@@ -36,22 +36,31 @@ pub enum Error {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
+    use rstest::rstest;
 
-    mod try_new {
-        use super::*;
+    #[rstest]
+    #[case("abc123")]
+    #[case("user_name_1")]
+    #[case("a")]
+    fn try_new_should_accept_valid_id(#[case] input: &str) {
+        let id = UserLoginId::try_new(input.to_string()).unwrap();
+        assert_eq!(id.id(), input);
+    }
 
-        #[test]
-        fn should_return_error_when_id_is_empty() {
-            assert!(matches!(UserLoginId::try_new("".to_string()), Err(Error::Empty)));
-        }
+    #[test]
+    fn try_new_should_return_error_when_empty() {
+        assert!(matches!(UserLoginId::try_new("".to_string()), Err(Error::Empty)));
+    }
 
-        #[test]
-        fn should_return_error_when_id_format_is_invalid() {
-            assert!(matches!(UserLoginId::try_new("あ".to_string()), Err(Error::InvalidFormat)));
-            assert!(matches!(UserLoginId::try_new("!!!".to_string()), Err(Error::InvalidFormat)));
-            assert!(matches!(UserLoginId::try_new("abc-def".to_string()), Err(Error::InvalidFormat)));
-        }
+    #[rstest]
+    #[case("あ")]
+    #[case("!!!")]
+    #[case("abc-def")]
+    #[case("ABC")]
+    #[case("hello world")]
+    fn try_new_should_return_error_for_invalid_format(#[case] input: &str) {
+        assert!(matches!(UserLoginId::try_new(input.to_string()), Err(Error::InvalidFormat)));
     }
 }

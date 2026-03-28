@@ -44,3 +44,19 @@ impl AIChatCharacter {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Id(pub u32);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn display_name_should_format_as_character_name_dash_title() {
+        let character = AIChatCharacter::new(
+            Id(1),
+            "title".to_string(),
+            "character_name".to_string(),
+            vec![],
+        );
+        assert_eq!(character.display_name(), "character_name - title");
+    }
+}

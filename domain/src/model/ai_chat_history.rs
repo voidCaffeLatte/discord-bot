@@ -45,3 +45,52 @@ pub struct ChatEntry {
     pub response: String,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::ai_chat_character::Id;
+    use rstest::{fixture, rstest};
+
+    #[fixture]
+    fn history() -> AIChatHistory {
+        AIChatHistory::with_key("user1".to_string(), Id(1))
+    }
+
+    fn entry(n: u32) -> ChatEntry {
+        ChatEntry {
+            request: format!("req{n}"),
+            response: format!("res{n}"),
+        }
+    }
+
+    // Adding entries up to MAX_ENTRY_COUNT keeps all of them
+    #[rstest]
+    fn add_chat_entry_should_keep_entries_up_to_max(mut history: AIChatHistory) {
+        history.add_chat_entry(entry(1));
+        history.add_chat_entry(entry(2));
+
+        assert_eq!(history.chat_entries().len(), 2);
+        assert_eq!(history.chat_entries()[0].request, "req1");
+        assert_eq!(history.chat_entries()[1].request, "req2");
+    }
+
+    // Exceeding MAX_ENTRY_COUNT drops the oldest, keeping the most recent entries
+    #[rstest]
+    #[case(3, &["req2", "req3"])]
+    #[case(4, &["req3", "req4"])]
+    fn add_chat_entry_should_drop_oldest_on_overflow(
+        mut history: AIChatHistory,
+        #[case] total: u32,
+        #[case] expected_requests: &[&str],
+    ) {
+        for i in 1..=total {
+            history.add_chat_entry(entry(i));
+        }
+
+        assert_eq!(history.chat_entries().len(), expected_requests.len());
+        for (entry, expected) in history.chat_entries().iter().zip(expected_requests) {
+            assert_eq!(entry.request, *expected);
+        }
+    }
+}
+
