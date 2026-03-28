@@ -45,12 +45,16 @@ impl GenerateAIImageUseCase {
         image_generation_activity.increment_count(at);
         self.image_generation_activity_repository.set(image_generation_activity);
 
-        Ok(UseCaseResult { image_bytes: gateway_result.bytes })
+        Ok(UseCaseResult {
+            image_bytes: gateway_result.bytes,
+            mime_type: gateway_result.mime_type,
+        })
     }
 }
 
 pub struct UseCaseResult {
     pub image_bytes: Vec<u8>,
+    pub mime_type: String,
 }
 
 #[derive(Error, Debug)]

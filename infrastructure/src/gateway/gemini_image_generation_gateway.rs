@@ -35,6 +35,7 @@ impl AIIMageGenerationGateway for GeminiImageGenerationGateway {
 
         Ok(Image {
             bytes: response.bytes,
+            mime_type: response.mime_type,
         })
     }
 }

@@ -41,9 +41,9 @@ impl GeminiClient {
         };
 
         let dto_response = self.send_request(&dto_request).await?;
-        let bytes = self.extract_image_response(&dto_response)?;
+        let (bytes, mime_type) = self.extract_image_response(&dto_response)?;
 
-        Ok(types::ImageResponse { bytes })
+        Ok(types::ImageResponse { bytes, mime_type })
     }
 
     fn api_url(&self) -> String {
@@ -216,7 +216,7 @@ impl GeminiClient {
     fn extract_image_response(
         &self,
         response: &dto::Response,
-    ) -> Result<Vec<u8>, GeminiError> {
+    ) -> Result<(Vec<u8>, String), GeminiError> {
         use base64::prelude::BASE64_STANDARD;
         use base64::Engine;
 
@@ -234,6 +234,6 @@ impl GeminiClient {
             .ok_or(GeminiError::NoImage)?;
 
         let bytes = BASE64_STANDARD.decode(&inline_data.data)?;
-        Ok(bytes)
+        Ok((bytes, inline_data.mime_type.clone()))
     }
 }

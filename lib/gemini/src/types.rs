@@ -30,6 +30,7 @@ pub struct Request {
 #[derive(Debug)]
 pub struct ImageResponse {
     pub bytes: Vec<u8>,
+    pub mime_type: String,
 }
 
 #[derive(Debug)]

@@ -8,6 +8,7 @@ pub trait AIIMageGenerationGateway {
 
 pub struct Image {
     pub bytes: Vec<u8>,
+    pub mime_type: String,
 }
 
 #[derive(Debug, Error)]

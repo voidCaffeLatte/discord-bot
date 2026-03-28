@@ -60,9 +60,14 @@ impl CommandRunner for AIImage {
         ];
         let response_message = self.fluent_proxy.get_message("ai-image--response--body", Some(&fluent_args));
 
+        let file_extension = use_case_result.mime_type
+            .strip_prefix("image/")
+            .unwrap_or("png");
+        let file_name = format!("response.{}", file_extension);
+
         let followup_response = CreateInteractionResponseFollowup::new()
             .content(response_message)
-            .add_file(CreateAttachment::bytes(use_case_result.image_bytes, "response.png"));
+            .add_file(CreateAttachment::bytes(use_case_result.image_bytes, file_name));
 
         interaction.create_followup(&context.http, followup_response).await?;
 
