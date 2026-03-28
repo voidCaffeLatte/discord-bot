@@ -9,6 +9,12 @@ pub enum GeminiError {
     #[error("candidate contained no text")]
     NoText,
 
+    #[error("candidate contained no image")]
+    NoImage,
+
     #[error(transparent)]
     JsonParseError(#[from] serde_json::Error),
+
+    #[error(transparent)]
+    Base64DecodeError(#[from] base64::DecodeError),
 }

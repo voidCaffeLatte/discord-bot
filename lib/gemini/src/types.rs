@@ -28,6 +28,11 @@ pub struct Request {
 // ── Response ──
 
 #[derive(Debug)]
+pub struct ImageResponse {
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Debug)]
 pub struct Response {
     pub text: String,
     pub grounding: Option<Grounding>,

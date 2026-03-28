@@ -689,6 +689,7 @@ dependencies = [
 name = "gemini"
 version = "1.0.0"
 dependencies = [
+ "base64",
  "reqwest 0.13.2",
  "schemars",
  "serde",

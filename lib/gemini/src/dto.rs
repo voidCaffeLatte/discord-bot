@@ -9,8 +9,19 @@ pub(crate) struct Content {
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct Part {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub inline_data: Option<InlineData>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct InlineData {
+    pub mime_type: String,
+    pub data: String,
 }
 
 // ── Request ──
@@ -44,8 +55,12 @@ pub(crate) struct UrlContext {}
 #[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct GenerationConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub response_mime_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub response_json_schema: Option<Schema>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub response_modalities: Option<Vec<String>>,
 }
 
 // ── Response ──

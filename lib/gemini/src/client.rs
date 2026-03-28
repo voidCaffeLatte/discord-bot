@@ -17,6 +17,35 @@ impl GeminiClient {
         }
     }
 
+    pub async fn generate_image(
+        &self,
+        prompt: &str,
+    ) -> Result<types::ImageResponse, GeminiError> {
+        let generation_config = dto::GenerationConfig {
+            response_mime_type: None,
+            response_json_schema: None,
+            response_modalities: Some(vec!["IMAGE".to_string()]),
+        };
+
+        let dto_request = dto::Request {
+            contents: vec![dto::Content {
+                parts: Some(vec![dto::Part {
+                    text: Some(prompt.to_string()),
+                    inline_data: None,
+                }]),
+                role: Some("user".to_string()),
+            }],
+            tools: None,
+            system_instruction: None,
+            generation_config: Some(generation_config),
+        };
+
+        let dto_response = self.send_request(&dto_request).await?;
+        let bytes = self.extract_image_response(&dto_response)?;
+
+        Ok(types::ImageResponse { bytes })
+    }
+
     fn api_url(&self) -> String {
         format!(
             "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
@@ -45,6 +74,7 @@ impl GeminiClient {
         let generation_config = dto::GenerationConfig {
             response_mime_type: Some("application/json".to_string()),
             response_json_schema: Some(schemars::schema_for!(T)),
+            response_modalities: None,
         };
         let dto_request = self.build_dto_request(request, Some(generation_config));
         let dto_response = self.send_request(&dto_request).await?;
@@ -87,6 +117,7 @@ impl GeminiClient {
                 dto::Content {
                     parts: Some(vec![dto::Part {
                         text: Some(message.text.clone()),
+                        inline_data: None,
                     }]),
                     role: Some(role.to_string()),
                 }
@@ -96,6 +127,7 @@ impl GeminiClient {
         let system_instruction = request.system_instruction.as_ref().map(|text| dto::Content {
             parts: Some(vec![dto::Part {
                 text: Some(text.clone()),
+                inline_data: None,
             }]),
             role: None,
         });
@@ -179,5 +211,29 @@ impl GeminiClient {
         });
 
         Ok((text, grounding))
+    }
+
+    fn extract_image_response(
+        &self,
+        response: &dto::Response,
+    ) -> Result<Vec<u8>, GeminiError> {
+        use base64::prelude::BASE64_STANDARD;
+        use base64::Engine;
+
+        let candidate = response
+            .candidates
+            .as_ref()
+            .and_then(|candidates| candidates.first())
+            .ok_or(GeminiError::NoCandidates)?;
+
+        let inline_data = candidate
+            .content
+            .as_ref()
+            .and_then(|content| content.parts.as_ref())
+            .and_then(|parts| parts.iter().find_map(|part| part.inline_data.as_ref()))
+            .ok_or(GeminiError::NoImage)?;
+
+        let bytes = BASE64_STANDARD.decode(&inline_data.data)?;
+        Ok(bytes)
     }
 }
