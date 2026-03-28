@@ -7,9 +7,15 @@ pub struct InMemoryRelationshipRepository {
     relationships: DashMap<(String, Id), Relationship>,
 }
 
+impl Default for InMemoryRelationshipRepository {
+    fn default() -> Self {
+        Self { relationships: DashMap::new() }
+    }
+}
+
 impl InMemoryRelationshipRepository {
     pub fn new() -> Self {
-        Self { relationships: DashMap::new() }
+        Self::default()
     }
 }
 

@@ -6,9 +6,15 @@ pub struct InMemoryAIChatActivityRepository {
     ai_chat_activities: DashMap<String, AIChatActivity>,
 }
 
+impl Default for InMemoryAIChatActivityRepository {
+    fn default() -> Self {
+        Self { ai_chat_activities: DashMap::new() }
+    }
+}
+
 impl InMemoryAIChatActivityRepository {
     pub fn new() -> Self {
-        Self { ai_chat_activities: DashMap::new() }
+        Self::default()
     }
 }
 

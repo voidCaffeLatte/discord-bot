@@ -91,7 +91,7 @@ impl clip_gateway::ClipGateway for ClipGateway {
         let results = Arc::new(results);
 
         let cache = CachedValue::new(
-            results.clone(), at.clone(), chrono::Duration::hours(Self::CACHE_AVAILABLE_HOURS),
+            results.clone(), *at, chrono::Duration::hours(Self::CACHE_AVAILABLE_HOURS),
         );
         self.cached_clips.insert(broadcaster_id.to_string(), cache);
 

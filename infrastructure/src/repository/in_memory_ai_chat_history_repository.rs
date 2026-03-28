@@ -7,11 +7,17 @@ pub struct InMemoryAIChatHistoryRepository {
     ai_chat_histories: DashMap<(String, ai_chat_character::Id), AIChatHistory>,
 }
 
-impl InMemoryAIChatHistoryRepository {
-    pub fn new() -> Self {
+impl Default for InMemoryAIChatHistoryRepository {
+    fn default() -> Self {
         Self {
             ai_chat_histories: DashMap::new(),
         }
+    }
+}
+
+impl InMemoryAIChatHistoryRepository {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

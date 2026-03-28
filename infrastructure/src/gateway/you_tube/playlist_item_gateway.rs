@@ -85,7 +85,7 @@ impl application::gateway::you_tube::playlist_item_gateway::PlaylistItemGateway 
 
         let results = Arc::new(results);
 
-        let cache = CachedValue::new(results.clone(), at.clone(), Duration::hours(Self::CACHE_AVAILABLE_HOURS));
+        let cache = CachedValue::new(results.clone(), *at, Duration::hours(Self::CACHE_AVAILABLE_HOURS));
         self.playlist_caches.insert(playlist_id.to_string(), cache);
 
         Ok(results)

@@ -6,11 +6,17 @@ pub struct InMemoryImageGenerationActivityRepository {
     image_generation_activities: DashMap<String, ImageGenerationActivity>,
 }
 
-impl InMemoryImageGenerationActivityRepository {
-    pub fn new() -> Self {
+impl Default for InMemoryImageGenerationActivityRepository {
+    fn default() -> Self {
         Self {
             image_generation_activities: DashMap::new()
         }
+    }
+}
+
+impl InMemoryImageGenerationActivityRepository {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

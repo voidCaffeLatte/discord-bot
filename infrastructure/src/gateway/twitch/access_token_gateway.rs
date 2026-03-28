@@ -30,14 +30,13 @@ impl AccessTokenGateway {
 
     pub async fn get_access_token(&self, at: &DateTime<Utc>) -> Result<AccessToken, Error> {
         let mut access_token_guard = self.access_token.lock().await;
-        if let Some(access_token) = access_token_guard.as_ref() {
-            if !access_token.is_expired(at) {
+        if let Some(access_token) = access_token_guard.as_ref()
+            && !access_token.is_expired(at) {
                 let is_valid = self.is_valid_access_token(access_token).await?;
                 if is_valid {
                     return Ok(access_token.clone());
                 }
             }
-        }
 
         let mut parameters = HashMap::new();
         parameters.insert("client_id", self.app_client_id.as_str());
