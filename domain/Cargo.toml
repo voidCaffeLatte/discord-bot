@@ -10,4 +10,4 @@ regex = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
-rstest = "0.25"
+rstest = "0.26"

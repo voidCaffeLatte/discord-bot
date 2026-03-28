@@ -31,7 +31,7 @@ impl GetRandomTwitchClipUseCase {
     }
 
     fn sample_random_clip(clips: &[Clip], amount: usize) -> Vec<Clip> {
-        clips.choose_multiple(&mut rand::rng(), amount).cloned().collect()
+        clips.sample(&mut rand::rng(), amount).cloned().collect()
     }
 }
 

@@ -37,7 +37,7 @@ impl CommandRunner for Choices {
             .collect::<Vec<_>>();
         let count: usize = command_option_extractor.get_integer("count").unwrap_or(1).try_into()?;
 
-        let selected_choices: Vec<_> = choices.choose_multiple(&mut rand::rng(), count).collect();
+        let selected_choices: Vec<_> = choices.sample(&mut rand::rng(), count).collect();
 
         let original_choices_message = choices
             .iter()
