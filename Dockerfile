@@ -8,11 +8,11 @@ RUN apt-get install -y \
     libssl-dev \
     libopus-dev
 
-ENV RUST_VERSION=1.90.0
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y
 
 WORKDIR /build
 
+COPY rust-toolchain.toml .
 COPY Cargo.toml .
 COPY Cargo.lock .
 COPY src/ src/
