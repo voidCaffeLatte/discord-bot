@@ -61,9 +61,8 @@ impl GeminiClient {
         let response = self
             .http_client
             .post(self.api_url())
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
             .header("x-goog-api-key", &self.api_key)
-            .body(serde_json::to_string(request).unwrap())
+            .json(request)
             .send()
             .await?
             .json::<dto::Response>()

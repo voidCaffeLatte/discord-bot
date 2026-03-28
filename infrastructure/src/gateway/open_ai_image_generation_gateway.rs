@@ -37,7 +37,6 @@ impl AIIMageGenerationGateway for OpenAIImageGenerationGateway {
 
         let response = self.http_client
             .post(Self::BASE_URL)
-            .header(reqwest::header::CONTENT_TYPE, "application/json")
             .bearer_auth(&self.api_key)
             .json(&request_body)
             .send()
