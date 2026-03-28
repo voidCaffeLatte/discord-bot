@@ -43,6 +43,7 @@ common = { path = "./common" }
 domain = { path = "./domain" }
 application = { path = "./application" }
 infrastructure = { path = "./infrastructure" }
+gemini = { path = "./lib/gemini" }
 serenity = "0.12.4"
 rand = { workspace = true }
 serde_json = { workspace = true }

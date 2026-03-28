@@ -429,6 +429,7 @@ dependencies = [
  "dashmap 6.1.0",
  "domain",
  "fluent",
+ "gemini",
  "infrastructure",
  "rand 0.10.0",
  "reqwest 0.13.2",

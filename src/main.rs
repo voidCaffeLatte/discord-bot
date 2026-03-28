@@ -21,6 +21,7 @@ use crate::presentation::{command, modal_interaction};
 use crate::presentation::command::CommandFactory;
 use crate::presentation::modal_interaction::ModalInteractionFactory;
 use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
+use gemini::GeminiClient;
 use infrastructure::gateway::gemini_text_generation_gateway::GeminiTextGenerationGateway;
 use infrastructure::gateway::gemini_image_generation_gateway::GeminiImageGenerationGateway;
 use common::fluent_proxy::FluentProxy;
@@ -64,9 +65,10 @@ async fn main() {
     let http_client = Arc::new(reqwest::Client::new());
 
     let gemini_api_key = std::env::var("GEMINI_API_KEY").expect("Environment variable \"GEMINI_API_KEY\" is specified");
-    let ai_text_generation_gateway = Arc::new(GeminiTextGenerationGateway::new(
+    let gemini_text_client = GeminiClient::new(
         gemini_api_key.clone(), reqwest::Client::new(), "gemini-3-flash-preview".to_string(),
-    ));
+    );
+    let ai_text_generation_gateway = Arc::new(GeminiTextGenerationGateway::new(gemini_text_client));
 
     let twitch_app_client_id = std::env::var("TWITCH_APP_CLIENT_ID").expect("Environment variable \"TWITCH_APP_CLIENT_ID\" is specified");
     let twitch_app_client_secret = std::env::var("TWITCH_APP_CLIENT_SECRET").expect("Environment variable \"TWITCH_APP_CLIENT_SECRET\" is specified");
@@ -113,9 +115,10 @@ async fn main() {
             fluent_proxy.clone(),
         ));
 
-    let gemini_image_generation_gateway = Arc::new(GeminiImageGenerationGateway::new(
+    let gemini_image_client = GeminiClient::new(
         gemini_api_key, reqwest::Client::new(), "gemini-3.1-flash-image-preview".to_string(),
-    ));
+    );
+    let gemini_image_generation_gateway = Arc::new(GeminiImageGenerationGateway::new(gemini_image_client));
     let image_generation_activity_repository = Arc::new(InMemoryImageGenerationActivityRepository::new());
     let generate_ai_image_use_case = Arc::new(GenerateAIImageUseCase::new(
         gemini_image_generation_gateway.clone(),

@@ -7,10 +7,8 @@ pub struct GeminiImageGenerationGateway {
 }
 
 impl GeminiImageGenerationGateway {
-    pub fn new(api_key: String, http_client: reqwest::Client, model_name: String) -> Self {
-        Self {
-            client: GeminiClient::new(api_key, http_client, model_name),
-        }
+    pub fn new(client: GeminiClient) -> Self {
+        Self { client }
     }
 
     fn map_error(error: gemini::GeminiError) -> GatewayError {
