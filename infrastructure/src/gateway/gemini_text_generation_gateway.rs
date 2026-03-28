@@ -18,8 +18,8 @@ impl GeminiTextGenerationGateway {
         }
     }
 
-    fn build_request(messages: &[Message], system_instruction: &str) -> gemini::types::Request {
-        gemini::types::Request {
+    fn build_request(messages: &[Message], system_instruction: &str) -> gemini::types::TextRequest {
+        gemini::types::TextRequest {
             messages: messages.iter().map(|message| gemini::types::Message {
                 role: match message.role() {
                     Role::User => gemini::types::Role::User,

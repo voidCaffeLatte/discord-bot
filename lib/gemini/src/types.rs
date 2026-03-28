@@ -19,7 +19,7 @@ pub enum Tool {
 }
 
 #[derive(Debug)]
-pub struct Request {
+pub struct TextRequest {
     pub messages: Vec<Message>,
     pub system_instruction: Option<String>,
     pub tools: Vec<Tool>,
@@ -34,13 +34,13 @@ pub struct ImageResponse {
 }
 
 #[derive(Debug)]
-pub struct Response {
+pub struct TextResponse {
     pub text: String,
     pub grounding: Option<Grounding>,
 }
 
 #[derive(Debug)]
-pub struct StructuredResponse<T> {
+pub struct StructuredTextResponse<T> {
     pub data: T,
     pub grounding: Option<Grounding>,
 }
