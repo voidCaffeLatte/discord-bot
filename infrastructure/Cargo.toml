@@ -8,6 +8,7 @@ common = { path = "../common" }
 domain = { path = "../domain" }
 application = { path = "../application" }
 gemini = { path = "../lib/gemini" }
+anyhow = { workspace = true }
 chrono = { workspace = true }
 thiserror = { workspace = true }
 base64 = { workspace = true }

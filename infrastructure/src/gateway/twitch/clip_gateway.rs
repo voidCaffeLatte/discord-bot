@@ -69,6 +69,8 @@ impl clip_gateway::ClipGateway for ClipGateway {
                 .send()
                 .await
                 .map_err(|e| clip_gateway::Error::RetrievalFailed(e.into()))?
+                .error_for_status()
+                .map_err(|e| clip_gateway::Error::RetrievalFailed(e.into()))?
                 .json::<dto::Response>()
                 .await
                 .map_err(|_error| clip_gateway::Error::InvalidResponse)?;

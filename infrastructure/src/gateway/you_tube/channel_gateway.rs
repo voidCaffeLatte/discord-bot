@@ -30,6 +30,8 @@ impl application::gateway::you_tube::channel_gateway::ChannelGateway for Channel
             .send()
             .await
             .map_err(|e| Error::RetrievalFailed(e.into()))?
+            .error_for_status()
+            .map_err(|e| Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
             .map_err(|_error| Error::InvalidResponse)?;

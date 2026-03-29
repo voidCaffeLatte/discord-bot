@@ -14,6 +14,9 @@ impl GeminiImageGenerationGateway {
     fn map_error(error: gemini::GeminiError) -> GatewayError {
         match error {
             gemini::GeminiError::HttpRequestFailed(error) => GatewayError::RequestFailed(error.into()),
+            gemini::GeminiError::HttpStatusError { status, body } => {
+                GatewayError::RequestFailed(anyhow::anyhow!("HTTP {status}: {body}"))
+            }
             gemini::GeminiError::Base64DecodeError(error) => GatewayError::InvalidResponse(error.into()),
             _ => GatewayError::GenerationFailed,
         }

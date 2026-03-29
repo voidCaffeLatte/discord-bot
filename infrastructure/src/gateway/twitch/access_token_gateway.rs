@@ -47,6 +47,7 @@ impl AccessTokenGateway {
             .form(&parameters)
             .send()
             .await?
+            .error_for_status()?
             .json::<dto::access_token::Response>()
             .await?;
 

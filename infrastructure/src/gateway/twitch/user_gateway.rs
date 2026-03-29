@@ -50,6 +50,8 @@ impl user_gateway::UserGateway for UserGateway {
             .send()
             .await
             .map_err(|e| user_gateway::Error::RetrievalFailed(e.into()))?
+            .error_for_status()
+            .map_err(|e| user_gateway::Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
             .map_err(|_error| user_gateway::Error::InvalidResponse)?;

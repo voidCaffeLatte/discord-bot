@@ -56,6 +56,8 @@ impl application::gateway::you_tube::playlist_item_gateway::PlaylistItemGateway 
                 .send()
                 .await
                 .map_err(|e| Error::RetrievalFailed(e.into()))?
+                .error_for_status()
+                .map_err(|e| Error::RetrievalFailed(e.into()))?
                 .json::<dto::Response>()
                 .await
                 .map_err(|_error| Error::InvalidResponse)?;

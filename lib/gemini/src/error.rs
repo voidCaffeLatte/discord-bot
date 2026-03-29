@@ -3,6 +3,12 @@ pub enum GeminiError {
     #[error(transparent)]
     HttpRequestFailed(#[from] reqwest::Error),
 
+    #[error("API returned HTTP {status}: {body}")]
+    HttpStatusError {
+        status: reqwest::StatusCode,
+        body: String,
+    },
+
     #[error("API returned no candidates")]
     NoCandidates,
 
