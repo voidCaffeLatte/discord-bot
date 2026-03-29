@@ -72,7 +72,6 @@ cp .env.template .env
 | `DISCORD_TOKEN` | Discord bot token |
 | `DISCORD_BOT_APPLICATION_ID` | Discord application ID |
 | `GEMINI_API_KEY` | Google Gemini API key |
-| `OPENAI_API_KEY` | OpenAI API key (for image generation) |
 | `YOU_TUBE_DATA_API_KEY` | YouTube Data API v3 key |
 | `TWITCH_APP_CLIENT_ID` | Twitch application client ID |
 | `TWITCH_APP_CLIENT_SECRET` | Twitch application client secret |
