@@ -20,6 +20,7 @@ COPY application/ application/
 COPY common/ common/
 COPY domain/ domain/
 COPY infrastructure/ infrastructure/
+COPY lib/ lib/
 
 RUN $HOME/.cargo/bin/cargo build --release
 
