@@ -78,8 +78,10 @@ impl ChatAICharactersUseCase {
         ];
         let system_prompt = self.fluent_proxy.get_message("ai-conversation--system-prompt--body", Some(&fluent_args));
 
+        let current_datetime = at.with_timezone(&chrono_tz::Asia::Tokyo).format("%Y-%m-%d %H:%M %:z").to_string();
         let fluent_args = fluent_args![
             "theme" => message,
+            "current-datetime" => current_datetime,
         ];
         let user_prompt = self.fluent_proxy.get_message("ai-conversation--user-prompt", Some(&fluent_args));
         let messages = [Message::new(Role::User, user_prompt.to_string())];

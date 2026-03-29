@@ -58,6 +58,8 @@ ai-chat--system-prompt--body =
     - 知らないことや情報源が無い情報は、憶測であることを明記してください
 
 ai-chat--user-prompt--body =
+    ## 現在日時
+    { $current-datetime }
     ## ユーザー名
     { $name }
     ## ユーザーからのメッセージ
@@ -94,7 +96,9 @@ ai-conversation--system-prompt--character =
     - 名前: { $name }
       - 肩書き: { $title }
       - 特徴: { $characteristics }
-ai-conversation--user-prompt = テーマ: { $theme }
+ai-conversation--user-prompt =
+    現在日時: { $current-datetime }
+    テーマ: { $theme }
 ai-conversation--response--body =
     ## 💬 テーマ
     { $theme }

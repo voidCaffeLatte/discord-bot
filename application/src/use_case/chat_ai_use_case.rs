@@ -92,10 +92,12 @@ impl ChatAIUseCase {
             Err(relationship_repository::Error::EntryNotFound(_, _)) => Relationship::with_key(user_id.to_string(), ai_chat_character.id().clone())
         };
 
+        let current_datetime = at.with_timezone(&chrono_tz::Asia::Tokyo).format("%Y-%m-%d %H:%M %:z").to_string();
         let fluent_args = fluent_args![
             "name" => user_name,
             "message" => message,
             "likability" => relationship.likability().value(),
+            "current-datetime" => current_datetime,
         ];
         let user_prompt = self.fluent_proxy.get_message("ai-chat--user-prompt--body", Some(&fluent_args));
 
