@@ -88,15 +88,26 @@ impl GeminiClient {
         &self,
         request: &dto::Request,
     ) -> Result<dto::Response, GeminiError> {
-        let response = self
+        let request_json = serde_json::to_string_pretty(request)
+            .unwrap_or_else(|e| format!("<serialization error: {e}>"));
+        tracing::debug!(target: "gemini", body = %request_json, "Gemini API request");
+
+        let response_text = self
             .http_client
             .post(self.api_url())
             .header("x-goog-api-key", &self.api_key)
             .json(request)
             .send()
             .await?
-            .json::<dto::Response>()
+            .text()
             .await?;
+
+        let response_json = serde_json::from_str::<serde_json::Value>(&response_text)
+            .and_then(|v| serde_json::to_string_pretty(&v))
+            .unwrap_or_else(|_| response_text.clone());
+        tracing::debug!(target: "gemini", body = %response_json, "Gemini API response");
+
+        let response: dto::Response = serde_json::from_str(&response_text)?;
 
         Ok(response)
     }
