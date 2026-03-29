@@ -17,7 +17,7 @@ use application::use_case::chat_ai_characters_use_case::ChatAICharactersUseCase;
 use application::use_case::chat_ai_use_case::ChatAIUseCase;
 use application::use_case::generate_ai_image_use_case::GenerateAIImageUseCase;
 use application::use_case::get_random_twitch_clip_use_case::GetRandomTwitchClipUseCase;
-use crate::presentation::{command, modal_interaction};
+use crate::presentation::command;
 use crate::presentation::command::CommandFactory;
 use crate::presentation::modal_interaction::ModalInteractionFactory;
 use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
@@ -156,6 +156,7 @@ async fn main() {
         )),
         Box::new(command::ai_chat::Factory::new(
             ai_chat_character_repository.clone(),
+            chat_ai_use_case.clone(),
             fluent_proxy.clone(),
         )),
         Box::new(command::ai_conversation::Factory::new(
@@ -184,11 +185,7 @@ async fn main() {
         .map(|factory| (factory.command_name(), factory))
         .collect::<HashMap<_, _>>();
 
-    let modal_interaction_factories: Vec<Box<dyn ModalInteractionFactory + Send + Sync>> =
-        vec![Box::new(modal_interaction::ai_chat::Factory::new(
-            chat_ai_use_case.clone(),
-            fluent_proxy.clone(),
-        ))];
+    let modal_interaction_factories: Vec<Box<dyn ModalInteractionFactory + Send + Sync>> = vec![];
 
     let modal_interaction_factories = modal_interaction_factories
         .into_iter()

@@ -38,6 +38,7 @@ random-you-tube-video--error--channel-not-found = チャンネルが見つかり
 random-you-tube-video--error--invalid-channel-handle = 無効なハンドルです。
 
 ai-chat--command-option--character-id--description = キャラクターの ID
+ai-chat--command-option--message--description = メッセージ
 ai-chat--command--description = AI キャラクターと会話する
 ai-chat--modal--title = AI チャット
 ai-chat--modal-component--message--label = メッセージ

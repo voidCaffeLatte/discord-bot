@@ -21,6 +21,7 @@ impl<'a> ResolvedValueExtension<'a> for ResolvedValue<'a> {
     }
 }
 
+#[allow(dead_code)]
 pub trait ActionRowComponentExtension {
     fn custom_id(&self) -> Option<String>;
     fn as_input_text(&self) -> Option<&InputText>;
