@@ -44,7 +44,7 @@ impl GeminiTextGenerationGateway {
             gemini::GeminiError::HttpStatusError { status, body } => {
                 GatewayError::RequestFailed(anyhow::anyhow!("HTTP {status}: {body}"))
             }
-            _ => GatewayError::InvalidResponse,
+            error => GatewayError::InvalidResponse(error.into()),
         }
     }
 }

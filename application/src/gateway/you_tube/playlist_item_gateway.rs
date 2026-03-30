@@ -17,5 +17,5 @@ pub enum Error {
     RetrievalFailed(#[source] anyhow::Error),
 
     #[error("invalid response")]
-    InvalidResponse,
+    InvalidResponse(#[source] anyhow::Error),
 }

@@ -17,7 +17,7 @@ pub enum GatewayError {
     RequestFailed(#[source] anyhow::Error),
 
     #[error("generation failed")]
-    GenerationFailed,
+    GenerationFailed(#[source] anyhow::Error),
 
     #[error("invalid response")]
     InvalidResponse(#[source] anyhow::Error),

@@ -54,13 +54,13 @@ impl user_gateway::UserGateway for UserGateway {
             .map_err(|e| user_gateway::Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
-            .map_err(|_error| user_gateway::Error::InvalidResponse)?;
+            .map_err(|error| user_gateway::Error::InvalidResponse(error.into()))?;
 
         let user_data = response.data.as_ref()
             .and_then(|data| data.first())
             .ok_or(user_gateway::Error::UserNotFound)?;
         let id = user_data.id.as_ref()
-            .ok_or(user_gateway::Error::InvalidResponse)?;
+            .ok_or_else(|| user_gateway::Error::InvalidResponse(anyhow::anyhow!("user id field is missing in response")))?;
 
         Ok(User::new(id.clone()))
     }

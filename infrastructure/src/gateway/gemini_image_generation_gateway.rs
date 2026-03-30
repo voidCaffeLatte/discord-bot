@@ -18,7 +18,7 @@ impl GeminiImageGenerationGateway {
                 GatewayError::RequestFailed(anyhow::anyhow!("HTTP {status}: {body}"))
             }
             gemini::GeminiError::Base64DecodeError(error) => GatewayError::InvalidResponse(error.into()),
-            _ => GatewayError::GenerationFailed,
+            error => GatewayError::GenerationFailed(error.into()),
         }
     }
 }

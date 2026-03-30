@@ -60,7 +60,7 @@ impl application::gateway::you_tube::playlist_item_gateway::PlaylistItemGateway 
                 .map_err(|e| Error::RetrievalFailed(e.into()))?
                 .json::<dto::Response>()
                 .await
-                .map_err(|_error| Error::InvalidResponse)?;
+                .map_err(|error| Error::InvalidResponse(error.into()))?;
 
             let Some(items) = response.items else { break; };
             let items = items

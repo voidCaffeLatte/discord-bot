@@ -34,7 +34,7 @@ impl application::gateway::you_tube::channel_gateway::ChannelGateway for Channel
             .map_err(|e| Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
-            .map_err(|_error| Error::InvalidResponse)?;
+            .map_err(|error| Error::InvalidResponse(error.into()))?;
 
         let item = response.items.as_ref()
             .filter(|items| !items.is_empty())

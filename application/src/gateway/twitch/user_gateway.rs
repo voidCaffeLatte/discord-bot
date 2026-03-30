@@ -21,5 +21,5 @@ pub enum Error {
     UserNotFound,
 
     #[error("invalid response")]
-    InvalidResponse,
+    InvalidResponse(#[source] anyhow::Error),
 }

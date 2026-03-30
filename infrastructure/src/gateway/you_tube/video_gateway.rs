@@ -40,7 +40,7 @@ impl application::gateway::you_tube::video_gateway::VideoGateway for VideoGatewa
             .map_err(|e| Error::RetrievalFailed(e.into()))?
             .json::<dto::Response>()
             .await
-            .map_err(|_error| Error::InvalidResponse)?;
+            .map_err(|error| Error::InvalidResponse(error.into()))?;
 
         let item = response.items.as_ref()
             .and_then(|items| items.first())
@@ -87,22 +87,22 @@ mod dto {
                     });
             let title = value.snippet.as_ref()
                 .and_then(|snippet| snippet.title.clone())
-                .ok_or(Self::Error::InvalidResponse)?;
+                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("title field is missing in response")))?;
             let view_count = value.statistics.as_ref()
                 .and_then(|stats| stats.view_count.as_ref())
                 .and_then(|view_count| view_count.parse::<u64>().ok())
-                .ok_or(Self::Error::InvalidResponse)?;
+                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("view count field is missing in response")))?;
             let published_at = value.snippet.as_ref()
                 .and_then(|snippet| snippet.published_at.as_ref())
-                .ok_or(Self::Error::InvalidResponse)?;
+                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("published_at field is missing in response")))?;
             let published_at = DateTime::parse_from_rfc3339(published_at)
-                .map_err(|_error| Self::Error::InvalidResponse)?
+                .map_err(|error| Self::Error::InvalidResponse(error.into()))?
                 .with_timezone(&Utc);
             let duration = value.content_details.as_ref()
                 .and_then(|detail| detail.duration.as_ref())
-                .ok_or(Self::Error::InvalidResponse)?;
+                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("duration field is missing in response")))?;
             let duration = iso8601::duration(duration)
-                .map_err(|_error| Self::Error::InvalidResponse)?
+                .map_err(|error| Self::Error::InvalidResponse(anyhow::anyhow!("{error:?}")))?
                 .into();
 
             Ok(Video::new(

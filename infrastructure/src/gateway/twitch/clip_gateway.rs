@@ -73,7 +73,7 @@ impl clip_gateway::ClipGateway for ClipGateway {
                 .map_err(|e| clip_gateway::Error::RetrievalFailed(e.into()))?
                 .json::<dto::Response>()
                 .await
-                .map_err(|_error| clip_gateway::Error::InvalidResponse)?;
+                .map_err(|error| clip_gateway::Error::InvalidResponse(error.into()))?;
 
             let raw_clips = response.data.unwrap_or_default();
             let clips = raw_clips.iter()
@@ -127,7 +127,7 @@ mod dto {
 
         fn try_from(value: &Data) -> Result<Self, Self::Error> {
             let created_at = DateTime::parse_from_rfc3339(&value.created_at)
-                .map_err(|_error| clip_gateway::Error::InvalidResponse)?
+                .map_err(|error| clip_gateway::Error::InvalidResponse(error.into()))?
                 .with_timezone(&Utc);
             let duration = Duration::from_secs_f32(value.duration);
             Ok(Clip::new(value.url.clone(), value.title.clone(), value.view_count, created_at, duration))

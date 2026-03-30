@@ -50,5 +50,5 @@ pub enum GatewayError {
     RequestFailed(#[source] anyhow::Error),
 
     #[error("invalid response")]
-    InvalidResponse,
+    InvalidResponse(#[source] anyhow::Error),
 }
