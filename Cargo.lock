@@ -421,6 +421,7 @@ dependencies = [
 name = "discord-bot"
 version = "1.0.0"
 dependencies = [
+ "anyhow",
  "application",
  "async-trait",
  "chrono",

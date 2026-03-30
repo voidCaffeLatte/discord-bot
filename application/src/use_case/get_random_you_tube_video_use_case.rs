@@ -75,5 +75,5 @@ pub enum Error {
     VideoNotFound,
 
     #[error("failed to retrieve video")]
-    VideoRetrievalFailed(#[source] Box<dyn std::error::Error + Send + Sync>),
+    VideoRetrievalFailed(#[source] anyhow::Error),
 }

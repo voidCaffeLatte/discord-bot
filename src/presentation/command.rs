@@ -23,6 +23,6 @@ pub trait CommandFactory {
     fn create(&self) -> Box<dyn CommandRunner + Send + Sync>;
 }
 
-pub type CommandError = Box<dyn std::error::Error + Send + Sync + 'static>;
+pub type CommandError = anyhow::Error;
 
 pub type CommandResult = Result<(), CommandError>;

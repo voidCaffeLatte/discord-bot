@@ -16,6 +16,6 @@ pub trait ModalInteractionFactory {
     fn create(&self) -> Box<dyn ModalInteraction + Send + Sync>;
 }
 
-pub type ModalInteractionError = Box<dyn std::error::Error + Send + Sync + 'static>;
+pub type ModalInteractionError = anyhow::Error;
 
 pub type ModalInteractionResult = Result<(), ModalInteractionError>;

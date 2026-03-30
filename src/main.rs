@@ -8,7 +8,7 @@ use std::time::Duration;
 use dashmap::DashSet;
 use fluent::FluentResource;
 use fluent::concurrent::FluentBundle;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -263,10 +263,9 @@ impl EventHandler for Handler {
 
                     let command = command_factory.create();
                     if let Err(error) = command.run(&context, &command_interaction).await {
-                        debug!("Unhandled Error Occurred!: {:?}", error);
-                        error!("Unhandled Error Occurred!: {}", error);
+                        error!("Unhandled Error Occurred!: {:?}", error);
 
-                        self.send_log_to_webhook(&format!("## ERROR\n```\n{}\n{:?}\n```", error, error)).await;
+                        self.send_log_to_webhook(&format!("## ERROR\n```\n{:?}\n```", error)).await;
 
                         command_interaction
                             .create_followup(
@@ -293,10 +292,9 @@ impl EventHandler for Handler {
                 {
                     let modal_interaction = modal_interaction_factory.create();
                     if let Err(error) = modal_interaction.run(&context, &interaction).await {
-                        debug!("Unhandled Error Occurred!: {:?}", error);
-                        error!("Unhandled Error Occurred!: {}", error);
+                        error!("Unhandled Error Occurred!: {:?}", error);
 
-                        self.send_log_to_webhook(&format!("## ERROR\n```\n{}\n{:?}\n```", error, error)).await;
+                        self.send_log_to_webhook(&format!("## ERROR\n```\n{:?}\n```", error)).await;
 
                         interaction
                             .create_followup(
