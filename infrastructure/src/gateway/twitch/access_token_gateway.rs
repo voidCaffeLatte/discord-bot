@@ -83,6 +83,6 @@ mod dto {
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error(transparent)]
+    #[error("failed to request Twitch API access token")]
     APIRequestFailed(#[from] reqwest::Error)
 }

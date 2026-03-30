@@ -110,6 +110,6 @@ pub enum Error {
     #[error("character is not found")]
     CharacterNotFound,
 
-    #[error(transparent)]
+    #[error("failed to generate AI characters conversation")]
     RequestError(#[from] GatewayError),
 }

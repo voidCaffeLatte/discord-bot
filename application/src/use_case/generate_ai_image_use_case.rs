@@ -62,6 +62,6 @@ pub enum UseCaseError {
     #[error("generation count is exceeded")]
     GenerationCountExceeded,
 
-    #[error(transparent)]
+    #[error("failed to generate AI image")]
     ImageGenerationFailed(#[from] GatewayError),
 }

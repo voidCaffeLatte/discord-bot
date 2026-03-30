@@ -150,7 +150,7 @@ pub enum UseCaseError {
     #[error("invalid likability")]
     InvalidLikability(#[from] likability::Error),
 
-    #[error(transparent)]
+    #[error("failed to generate AI chat response")]
     RequestError(#[from] GatewayError),
 }
 

@@ -40,7 +40,7 @@ pub enum Error {
     #[error("target user is not found")]
     UserNotFound,
 
-    #[error(transparent)]
+    #[error("failed to retrieve Twitch clips")]
     TwitchClipAccessError(#[from] twitch::clip_gateway::Error),
 
     #[error("twitch user access error")]
@@ -52,7 +52,7 @@ impl From<twitch::user_gateway::Error> for Error {
         match value {
             twitch::user_gateway::Error::RetrievalFailed(_) => Error::TwitchUserAccessError(value),
             twitch::user_gateway::Error::UserNotFound => Error::UserNotFound,
-            twitch::user_gateway::Error::InvalidResponse => Error::TwitchUserAccessError(value),
+            twitch::user_gateway::Error::InvalidResponse(_) => Error::TwitchUserAccessError(value),
         }
     }
 }
