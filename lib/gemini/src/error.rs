@@ -1,7 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum GeminiError {
     #[error("failed to send HTTP request to Gemini API")]
-    HttpRequestFailed(#[from] reqwest::Error),
+    HttpRequestFailed(#[source] anyhow::Error),
 
     #[error("API returned HTTP {status}: {body}")]
     HttpStatusError {
@@ -19,8 +19,8 @@ pub enum GeminiError {
     NoImage,
 
     #[error("failed to parse Gemini API response as JSON")]
-    JsonParseError(#[from] serde_json::Error),
+    JsonParseError(#[source] anyhow::Error),
 
     #[error("failed to decode base64 image data from Gemini API response")]
-    Base64DecodeError(#[from] base64::DecodeError),
+    Base64DecodeError(#[source] anyhow::Error),
 }

@@ -46,10 +46,13 @@ impl AccessTokenGateway {
             .post(Self::TOKEN_API_BASE_URL)
             .form(&parameters)
             .send()
-            .await?
-            .error_for_status()?
+            .await
+            .map_err(|error| Error::APIRequestFailed(error.into()))?
+            .error_for_status()
+            .map_err(|error| Error::APIRequestFailed(error.into()))?
             .json::<dto::access_token::Response>()
-            .await?;
+            .await
+            .map_err(|error| Error::APIRequestFailed(error.into()))?;
 
         let expires_at = *at + chrono::Duration::seconds(response.expires_in);
         let access_token = AccessToken::new(response.access_token, expires_at);
@@ -64,7 +67,8 @@ impl AccessTokenGateway {
             .get(Self::VALIDATE_API_BASE_URL)
             .bearer_auth(access_token.access_token())
             .send()
-            .await?;
+            .await
+            .map_err(|error| Error::APIRequestFailed(error.into()))?;
 
         Ok(response.status() == reqwest::StatusCode::OK)
     }
@@ -84,5 +88,5 @@ mod dto {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("failed to request Twitch API access token")]
-    APIRequestFailed(#[from] reqwest::Error)
+    APIRequestFailed(#[source] anyhow::Error)
 }

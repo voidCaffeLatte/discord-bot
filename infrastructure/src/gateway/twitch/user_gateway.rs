@@ -37,7 +37,8 @@ impl user_gateway::UserGateway for UserGateway {
         user_login_id: &UserLoginId,
         at: &DateTime<Utc>,
     ) -> Result<User, user_gateway::Error> {
-        let access_token = self.twitch_access_token_gateway.get_access_token(at).await?;
+        let access_token = self.twitch_access_token_gateway.get_access_token(at).await
+            .map_err(|error| user_gateway::Error::RetrievalFailed(error.into()))?;
 
         let mut query_parameters = HashMap::new();
         query_parameters.insert("login", user_login_id.id());
@@ -81,10 +82,3 @@ mod dto {
     }
 }
 
-impl From<twitch::access_token_gateway::Error> for user_gateway::Error {
-    fn from(value: twitch::access_token_gateway::Error) -> Self {
-        match value {
-            twitch::access_token_gateway::Error::APIRequestFailed(error) => user_gateway::Error::RetrievalFailed(error.into()),
-        }
-    }
-}

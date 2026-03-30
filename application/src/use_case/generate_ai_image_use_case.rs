@@ -1,4 +1,4 @@
-use crate::gateway::ai_image_generation_gateway::{AIIMageGenerationGateway, GatewayError};
+use crate::gateway::ai_image_generation_gateway::AIIMageGenerationGateway;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use thiserror::Error;
@@ -40,7 +40,8 @@ impl GenerateAIImageUseCase {
 
         let prompt = prompt.into();
 
-        let gateway_result = self.ai_image_generation_gateway.generate_image(&prompt).await?;
+        let gateway_result = self.ai_image_generation_gateway.generate_image(&prompt).await
+            .map_err(|error| UseCaseError::ImageGenerationFailed(error.into()))?;
 
         image_generation_activity.increment_count(at);
         self.image_generation_activity_repository.set(image_generation_activity);
@@ -63,5 +64,5 @@ pub enum UseCaseError {
     GenerationCountExceeded,
 
     #[error("failed to generate AI image")]
-    ImageGenerationFailed(#[from] GatewayError),
+    ImageGenerationFailed(#[source] anyhow::Error),
 }

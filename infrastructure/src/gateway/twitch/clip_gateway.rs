@@ -48,7 +48,8 @@ impl clip_gateway::ClipGateway for ClipGateway {
             return Ok(clips.clone());
         }
 
-        let access_token = self.twitch_access_token_gateway.get_access_token(at).await?;
+        let access_token = self.twitch_access_token_gateway.get_access_token(at).await
+            .map_err(|error| clip_gateway::Error::RetrievalFailed(error.into()))?;
 
         let mut results: Vec<Clip> = Vec::with_capacity(Self::CLIP_COUNT_PER_FETCH * Self::FETCH_COUNT);
         let mut pagination_cursor: Option<String> = None;
@@ -140,10 +141,3 @@ mod dto {
     }
 }
 
-impl From<twitch::access_token_gateway::Error> for clip_gateway::Error {
-    fn from(value: twitch::access_token_gateway::Error) -> Self {
-        match value {
-            twitch::access_token_gateway::Error::APIRequestFailed(error) => clip_gateway::Error::RetrievalFailed(error.into()),
-        }
-    }
-}

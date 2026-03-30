@@ -79,7 +79,8 @@ impl GeminiClient {
         let dto_request = self.build_dto_request(request, Some(generation_config));
         let dto_response = self.send_request(&dto_request).await?;
         let (text, grounding) = self.extract_response(&dto_response)?;
-        let data: T = serde_json::from_str(&text)?;
+        let data: T = serde_json::from_str(&text)
+            .map_err(|error| GeminiError::JsonParseError(error.into()))?;
 
         Ok(types::StructuredTextResponse { data, grounding })
     }
@@ -98,10 +99,12 @@ impl GeminiClient {
             .header("x-goog-api-key", &self.api_key)
             .json(request)
             .send()
-            .await?;
+            .await
+            .map_err(|error| GeminiError::HttpRequestFailed(error.into()))?;
 
         let status = response.status();
-        let response_text = response.text().await?;
+        let response_text = response.text().await
+            .map_err(|error| GeminiError::HttpRequestFailed(error.into()))?;
 
         let response_json = serde_json::from_str::<serde_json::Value>(&response_text)
             .and_then(|v| serde_json::to_string_pretty(&v))
@@ -115,7 +118,8 @@ impl GeminiClient {
             });
         }
 
-        let response: dto::Response = serde_json::from_str(&response_text)?;
+        let response: dto::Response = serde_json::from_str(&response_text)
+            .map_err(|error| GeminiError::JsonParseError(error.into()))?;
 
         Ok(response)
     }
@@ -252,7 +256,8 @@ impl GeminiClient {
             .and_then(|parts| parts.iter().find_map(|part| part.inline_data.as_ref()))
             .ok_or(GeminiError::NoImage)?;
 
-        let bytes = BASE64_STANDARD.decode(&inline_data.data)?;
+        let bytes = BASE64_STANDARD.decode(&inline_data.data)
+            .map_err(|error| GeminiError::Base64DecodeError(error.into()))?;
         Ok((bytes, inline_data.mime_type.clone()))
     }
 }

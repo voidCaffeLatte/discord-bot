@@ -1,5 +1,5 @@
 use crate::gateway::ai_structured_text_generation_gateway::AIStructuredTextGenerationGateway;
-use crate::gateway::ai_text_generation_gateway::{GatewayError, Message, Role};
+use crate::gateway::ai_text_generation_gateway::{Message, Role};
 use crate::repository::ai_chat_activity_repository::AIChatActivityRepository;
 use crate::repository::ai_chat_character_repository::AIChatCharacterRepository;
 use crate::repository::ai_chat_history_repository::AIChatHistoryRepository;
@@ -12,7 +12,6 @@ use domain::model::ai_chat::character::relationship::Relationship;
 use domain::model::ai_chat_activity::AIChatActivity;
 use domain::model::ai_chat_character;
 use domain::model::ai_chat_history::{AIChatHistory, ChatEntry};
-use domain::value_object::ai_chat::character::likability;
 use domain::value_object::ai_chat::character::likability::Likability;
 use domain::value_object::ai_text::AIText;
 use crate::repository::ai_chat::character::relationship_repository;
@@ -116,10 +115,12 @@ impl ChatAIUseCase {
         ];
         let system_prompt = self.fluent_proxy.get_message("ai-chat--system-prompt--body", Some(&fluent_args));
 
-        let result = self.ai_text_generation_gateway.generate_structured_text(&messages, &system_prompt).await?;
+        let result = self.ai_text_generation_gateway.generate_structured_text(&messages, &system_prompt).await
+            .map_err(|error| UseCaseError::RequestError(error.into()))?;
         let (response, web_references) = result.into_parts();
 
-        relationship.change_likability(response.likability_change)?;
+        relationship.change_likability(response.likability_change)
+            .map_err(|error| UseCaseError::InvalidLikability(error.into()))?;
         self.ai_chat_character_relationship_repository.set(relationship);
 
         ai_chat_activity.increment_chat_count(at);
@@ -148,10 +149,10 @@ pub enum UseCaseError {
     CharacterNotFound,
 
     #[error("invalid likability")]
-    InvalidLikability(#[from] likability::Error),
+    InvalidLikability(#[source] anyhow::Error),
 
     #[error("failed to generate AI chat response")]
-    RequestError(#[from] GatewayError),
+    RequestError(#[source] anyhow::Error),
 }
 
 mod dto {

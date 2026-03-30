@@ -40,7 +40,7 @@ impl GeminiTextGenerationGateway {
 
     fn map_error(error: gemini::GeminiError) -> GatewayError {
         match error {
-            gemini::GeminiError::HttpRequestFailed(error) => GatewayError::RequestFailed(error.into()),
+            gemini::GeminiError::HttpRequestFailed(error) => GatewayError::RequestFailed(error),
             gemini::GeminiError::HttpStatusError { status, body } => {
                 GatewayError::RequestFailed(anyhow::anyhow!("HTTP {status}: {body}"))
             }

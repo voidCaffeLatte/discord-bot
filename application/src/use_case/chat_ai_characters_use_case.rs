@@ -1,4 +1,4 @@
-use crate::gateway::ai_text_generation_gateway::{AITextGenerationGateway, GatewayError, Message, Role};
+use crate::gateway::ai_text_generation_gateway::{AITextGenerationGateway, Message, Role};
 use crate::repository::ai_chat_activity_repository::AIChatActivityRepository;
 use crate::repository::ai_chat_character_repository::AIChatCharacterRepository;
 use crate::repository::{ai_chat_activity_repository, ai_chat_character_repository};
@@ -86,7 +86,8 @@ impl ChatAICharactersUseCase {
         let user_prompt = self.fluent_proxy.get_message("ai-conversation--user-prompt", Some(&fluent_args));
         let messages = [Message::new(Role::User, user_prompt.to_string())];
 
-        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt).await?;
+        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt).await
+            .map_err(|error| Error::RequestError(error.into()))?;
 
         ai_chat_activity.increment_chat_count(at);
         self.ai_chat_activity_repository.set(ai_chat_activity);
@@ -111,5 +112,5 @@ pub enum Error {
     CharacterNotFound,
 
     #[error("failed to generate AI characters conversation")]
-    RequestError(#[from] GatewayError),
+    RequestError(#[source] anyhow::Error),
 }

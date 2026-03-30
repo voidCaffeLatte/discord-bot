@@ -25,8 +25,13 @@ impl GetRandomTwitchClipUseCase {
     }
 
     pub async fn run(&self, user_login_id: &UserLoginId, amount: usize, at: &DateTime<Utc>) -> Result<Vec<Clip>, Error> {
-        let twitch_user = self.twitch_user_gateway.get_by_user_login_id(user_login_id, at).await?;
-        let clips = self.twitch_clip_gateway.get_by_broadcaster_id(twitch_user.id(), at).await?;
+        let twitch_user = self.twitch_user_gateway.get_by_user_login_id(user_login_id, at).await
+            .map_err(|error| match error {
+                twitch::user_gateway::Error::UserNotFound => Error::UserNotFound,
+                error => Error::TwitchUserAccessError(error.into()),
+            })?;
+        let clips = self.twitch_clip_gateway.get_by_broadcaster_id(twitch_user.id(), at).await
+            .map_err(|error| Error::TwitchClipAccessError(error.into()))?;
         Ok(Self::sample_random_clip(&clips, amount))
     }
 
@@ -41,19 +46,10 @@ pub enum Error {
     UserNotFound,
 
     #[error("failed to retrieve Twitch clips")]
-    TwitchClipAccessError(#[from] twitch::clip_gateway::Error),
+    TwitchClipAccessError(#[source] anyhow::Error),
 
     #[error("twitch user access error")]
-    TwitchUserAccessError(#[source] twitch::user_gateway::Error),
+    TwitchUserAccessError(#[source] anyhow::Error),
 }
 
-impl From<twitch::user_gateway::Error> for Error {
-    fn from(value: twitch::user_gateway::Error) -> Self {
-        match value {
-            twitch::user_gateway::Error::RetrievalFailed(_) => Error::TwitchUserAccessError(value),
-            twitch::user_gateway::Error::UserNotFound => Error::UserNotFound,
-            twitch::user_gateway::Error::InvalidResponse(_) => Error::TwitchUserAccessError(value),
-        }
-    }
-}
 
