@@ -28,7 +28,10 @@ impl AIIMageGenerationGateway for GeminiImageGenerationGateway {
     async fn generate_image(&self, prompt: &str) -> Result<Image, GatewayError> {
         let response = self
             .client
-            .generate_image(prompt)
+            .generate_image(
+                prompt,
+                Some("Generate an image according to the user's instructions."),
+            )
             .await
             .map_err(Self::map_error)?;
 

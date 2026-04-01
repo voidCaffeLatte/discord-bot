@@ -20,12 +20,21 @@ impl GeminiClient {
     pub async fn generate_image(
         &self,
         prompt: &str,
+        system_instruction: Option<&str>,
     ) -> Result<types::ImageResponse, GeminiError> {
         let generation_config = dto::GenerationConfig {
             response_mime_type: None,
             response_json_schema: None,
             response_modalities: Some(vec!["IMAGE".to_string()]),
         };
+
+        let system_instruction = system_instruction.map(|text| dto::Content {
+            parts: Some(vec![dto::Part {
+                text: Some(text.to_string()),
+                inline_data: None,
+            }]),
+            role: None,
+        });
 
         let dto_request = dto::Request {
             contents: vec![dto::Content {
@@ -36,7 +45,7 @@ impl GeminiClient {
                 role: Some("user".to_string()),
             }],
             tools: None,
-            system_instruction: None,
+            system_instruction,
             generation_config: Some(generation_config),
         };
 
