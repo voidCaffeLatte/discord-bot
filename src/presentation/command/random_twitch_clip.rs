@@ -1,4 +1,5 @@
 use crate::presentation::command::{CommandFactory, CommandResult, CommandRunner};
+use crate::presentation::common::duration_formatter::format_duration;
 use crate::presentation::common::serenity_extension::ResolvedValueExtension;
 use application::use_case::get_random_twitch_clip_use_case;
 use application::use_case::get_random_twitch_clip_use_case::GetRandomTwitchClipUseCase;
@@ -65,7 +66,7 @@ impl CommandRunner for RandomTwitchClip {
         let clips_message = clips.iter().map(|clip| {
             let fluent_args = fluent_args![
                 "title" => clip.title(),
-                "duration" => clip.duration().as_secs(),
+                "duration" => format_duration(clip.duration()),
                 "view-count" => clip.view_count(),
                 "created-at" => clip.created_at().with_timezone(&chrono_tz::Asia::Tokyo).to_rfc3339(),
                 "url" => clip.url(),

@@ -15,7 +15,7 @@ random-twitch-clip--response--body =
 random-twitch-clip--response--clip =
     ### 🎬 { $title }
     - 👀 { $view-count } 回
-    - ⏳ { $duration } 秒
+    - ⏳ { $duration }
     - 📅 { $created-at }
     - 🔗 { $url }
 random-twitch-clip--error--clip-not-found = クリップが見つかりませんでした。
@@ -30,7 +30,7 @@ random-you-tube-video--response--body =
 random-you-tube-video--response--video =
     ### 🎬 { $title }
     - 👀 { $view-count } 回
-    - ⏳ { $duration } 秒
+    - ⏳ { $duration }
     - 📅 { $published-at }
     - 🔗 { $url }
 random-you-tube-video--error--video-not-found = 動画が見つかりませんでした。

@@ -1,4 +1,5 @@
 use crate::presentation::command::{CommandFactory, CommandResult, CommandRunner};
+use crate::presentation::common::duration_formatter::format_duration;
 use crate::presentation::common::serenity_extension::ResolvedValueExtension;
 use application::use_case::get_random_you_tube_video_use_case;
 use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
@@ -64,7 +65,7 @@ impl CommandRunner for RandomYouTubeVideo {
         let video = output.you_tube_video;
 
         let title = video.title();
-        let duration = video.duration().as_secs().to_string();
+        let duration = format_duration(video.duration());
         let view_count = video.view_count().to_string();
         let published_at = video.published_at().with_timezone(&chrono_tz::Asia::Tokyo).to_rfc3339();
 
