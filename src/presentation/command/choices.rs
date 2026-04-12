@@ -110,7 +110,7 @@ impl CommandFactory for Factory {
             command_option
                 .required(index <= 2)
                 .min_length(1)
-                .max_length(30)
+                .max_length(100)
         }).collect();
 
         let command_description = self.fluent_proxy.get_message("choices--command-option--count--description", None);
