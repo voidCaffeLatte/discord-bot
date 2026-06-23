@@ -1,5 +1,6 @@
 use crate::presentation::command;
 use crate::presentation::command::CommandFactory;
+use crate::presentation::followupable::Followupable;
 use crate::presentation::modal_interaction::ModalInteractionFactory;
 use crate::presentation::webhook_logger::WebhookLogger;
 use application::use_case::chat_ai_characters_use_case::ChatAICharactersUseCase;
@@ -307,24 +308,8 @@ impl EventHandler for Handler {
 
                     let command = command_factory.create();
                     if let Err(error) = command.run(&context, &command_interaction).await {
-                        error!("Unhandled Error Occurred!: {:?}", error);
-
-                        if let Some(webhook_logger) = &self.webhook_logger {
-                            webhook_logger.report_error(&error).await;
-                        }
-
-                        command_interaction
-                            .create_followup(
-                                &context.http,
-                                CreateInteractionResponseFollowup::new().content(
-                                    self.fluent_proxy.get_message(
-                                        "common--error--unexpected-error-occurred",
-                                        None,
-                                    ),
-                                ),
-                            )
-                            .await
-                            .unwrap(); // FIXME: Will panic if already followed up
+                        self.report_interaction_error(&context, &command_interaction, error)
+                            .await;
                     }
 
                     // Add 1-second cooldown for every command execution
@@ -344,28 +329,38 @@ impl EventHandler for Handler {
                 {
                     let modal_interaction = modal_interaction_factory.create();
                     if let Err(error) = modal_interaction.run(&context, &interaction).await {
-                        error!("Unhandled Error Occurred!: {:?}", error);
-
-                        if let Some(webhook_logger) = &self.webhook_logger {
-                            webhook_logger.report_error(&error).await;
-                        }
-
-                        interaction
-                            .create_followup(
-                                &context.http,
-                                CreateInteractionResponseFollowup::new().content(
-                                    self.fluent_proxy.get_message(
-                                        "common--error--unexpected-error-occurred",
-                                        None,
-                                    ),
-                                ),
-                            )
-                            .await
-                            .unwrap(); // FIXME: Will panic if already followed up
+                        self.report_interaction_error(&context, &interaction, error)
+                            .await;
                     }
                 }
             }
             _ => {}
         };
+    }
+}
+
+impl Handler {
+    async fn report_interaction_error<I: Followupable + Sync>(
+        &self,
+        context: &Context,
+        interaction: &I,
+        error: anyhow::Error,
+    ) {
+        error!("Unhandled Error Occurred!: {:?}", error);
+
+        if let Some(webhook_logger) = &self.webhook_logger {
+            webhook_logger.report_error(&error).await;
+        }
+
+        let followup = CreateInteractionResponseFollowup::new().content(
+            self.fluent_proxy
+                .get_message("common--error--unexpected-error-occurred", None),
+        );
+        if let Err(followup_error) = interaction.send_followup(context, followup).await {
+            error!(
+                "Failed to send error followup message: {:?}",
+                followup_error
+            );
+        }
     }
 }
