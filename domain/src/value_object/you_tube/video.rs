@@ -1,5 +1,5 @@
-use chrono::{DateTime, Utc};
 use crate::value_object::you_tube::privacy_status::PrivacyStatus;
+use chrono::{DateTime, Utc};
 
 #[derive(Clone, Debug)]
 pub struct Video {

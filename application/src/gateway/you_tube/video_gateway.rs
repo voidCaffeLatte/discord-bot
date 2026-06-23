@@ -2,10 +2,7 @@ use domain::value_object::you_tube::video::Video;
 
 #[async_trait::async_trait]
 pub trait VideoGateway {
-    async fn get_by_video_id(
-        &self,
-        video_id: &str,
-    ) -> Result<Video, Error>;
+    async fn get_by_video_id(&self, video_id: &str) -> Result<Video, Error>;
 }
 
 #[derive(Debug, thiserror::Error)]

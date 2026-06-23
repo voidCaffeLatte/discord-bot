@@ -1,4 +1,6 @@
-use application::gateway::ai_structured_text_generation_gateway::{AIStructuredTextGenerationGateway, StructuredAIText};
+use application::gateway::ai_structured_text_generation_gateway::{
+    AIStructuredTextGenerationGateway, StructuredAIText,
+};
 use application::gateway::ai_text_generation_gateway::GatewayError;
 use application::gateway::ai_text_generation_gateway::{AITextGenerationGateway, Message, Role};
 use async_trait::async_trait;
@@ -16,22 +18,32 @@ impl GeminiTextGenerationGateway {
 
     fn build_request(messages: &[Message], system_instruction: &str) -> gemini::types::TextRequest {
         gemini::types::TextRequest {
-            messages: messages.iter().map(|message| gemini::types::Message {
-                role: match message.role() {
-                    Role::User => gemini::types::Role::User,
-                    Role::Model => gemini::types::Role::Model,
-                },
-                text: message.message().to_string(),
-            }).collect(),
+            messages: messages
+                .iter()
+                .map(|message| gemini::types::Message {
+                    role: match message.role() {
+                        Role::User => gemini::types::Role::User,
+                        Role::Model => gemini::types::Role::Model,
+                    },
+                    text: message.message().to_string(),
+                })
+                .collect(),
             system_instruction: Some(system_instruction.to_string()),
-            tools: vec![gemini::types::Tool::GoogleSearch, gemini::types::Tool::UrlContext],
+            tools: vec![
+                gemini::types::Tool::GoogleSearch,
+                gemini::types::Tool::UrlContext,
+            ],
         }
     }
 
-    fn extract_web_references(grounding: Option<gemini::types::Grounding>) -> Option<Vec<WebReference>> {
+    fn extract_web_references(
+        grounding: Option<gemini::types::Grounding>,
+    ) -> Option<Vec<WebReference>> {
         grounding
             .map(|grounding| {
-                grounding.chunks.iter()
+                grounding
+                    .chunks
+                    .iter()
                     .map(|chunk| WebReference::new(chunk.title.clone(), chunk.uri.clone()))
                     .collect()
             })
@@ -57,7 +69,11 @@ impl AITextGenerationGateway for GeminiTextGenerationGateway {
         system_instruction: &str,
     ) -> Result<AIText, GatewayError> {
         let request = Self::build_request(messages, system_instruction);
-        let response = self.client.generate_text(&request).await.map_err(Self::map_error)?;
+        let response = self
+            .client
+            .generate_text(&request)
+            .await
+            .map_err(Self::map_error)?;
         let web_references = Self::extract_web_references(response.grounding);
 
         Ok(AIText::new(response.text, web_references))
@@ -75,7 +91,11 @@ where
         system_instruction: &str,
     ) -> Result<StructuredAIText<T>, GatewayError> {
         let request = Self::build_request(messages, system_instruction);
-        let response = self.client.generate_structured_text::<T>(&request).await.map_err(Self::map_error)?;
+        let response = self
+            .client
+            .generate_structured_text::<T>(&request)
+            .await
+            .map_err(Self::map_error)?;
         let web_references = Self::extract_web_references(response.grounding);
 
         Ok(StructuredAIText::new(response.data, web_references))

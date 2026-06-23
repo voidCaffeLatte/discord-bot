@@ -1,20 +1,18 @@
-use std::sync::Arc;
-use async_trait::async_trait;
-use serenity::all::{CommandInteraction, Context, CreateCommand, CreateInteractionResponseFollowup};
-use common::fluent_proxy::FluentProxy;
 use crate::presentation::command::{CommandFactory, CommandResult, CommandRunner};
+use async_trait::async_trait;
+use common::fluent_proxy::FluentProxy;
+use serenity::all::{
+    CommandInteraction, Context, CreateCommand, CreateInteractionResponseFollowup,
+};
+use std::sync::Arc;
 
 pub struct Ping {
     fluent_proxy: Arc<FluentProxy>,
 }
 
 impl Ping {
-    pub fn new(
-        fluent_proxy: Arc<FluentProxy>,
-    ) -> Self {
-        Self {
-            fluent_proxy
-        }
+    pub fn new(fluent_proxy: Arc<FluentProxy>) -> Self {
+        Self { fluent_proxy }
     }
 }
 
@@ -36,12 +34,8 @@ pub struct Factory {
 }
 
 impl Factory {
-    pub fn new(
-        fluent_proxy: Arc<FluentProxy>,
-    ) -> Self {
-        Self {
-            fluent_proxy,
-        }
+    pub fn new(fluent_proxy: Arc<FluentProxy>) -> Self {
+        Self { fluent_proxy }
     }
 }
 
@@ -51,7 +45,9 @@ impl CommandFactory for Factory {
     }
 
     fn command_specification(&self) -> CreateCommand {
-        let command_description = self.fluent_proxy.get_message("ping--command--description", None);
+        let command_description = self
+            .fluent_proxy
+            .get_message("ping--command--description", None);
         CreateCommand::new(self.command_name()).description(command_description)
     }
 

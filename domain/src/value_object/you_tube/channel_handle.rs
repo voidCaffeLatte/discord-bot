@@ -7,7 +7,11 @@ impl ChannelHandle {
     pub fn try_new(handle: String) -> Result<Self, Error> {
         let length = handle.chars().count();
         if !(Self::MIN_LENGTH..=Self::MAX_LENGTH).contains(&length) {
-            return Err(Error::InvalidLength(Self::MIN_LENGTH, Self::MAX_LENGTH, length));
+            return Err(Error::InvalidLength(
+                Self::MIN_LENGTH,
+                Self::MAX_LENGTH,
+                length,
+            ));
         }
 
         Ok(Self(handle))
@@ -21,7 +25,7 @@ impl ChannelHandle {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("Handle length must be between {0} and {1} - length: {2}")]
-    InvalidLength(usize, usize, usize)
+    InvalidLength(usize, usize, usize),
 }
 
 #[cfg(test)]

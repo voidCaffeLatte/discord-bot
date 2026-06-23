@@ -9,7 +9,10 @@ use common::fluent_proxy::FluentProxy;
 use domain::value_object::twitch::user_login_id;
 use domain::value_object::twitch::user_login_id::UserLoginId;
 use fluent::fluent_args;
-use serenity::all::{CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption, CreateInteractionResponseFollowup};
+use serenity::all::{
+    CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
+    CreateInteractionResponseFollowup,
+};
 use std::sync::Arc;
 
 pub struct RandomTwitchClip {
@@ -37,27 +40,64 @@ impl CommandRunner for RandomTwitchClip {
         let now = Utc::now();
 
         let options = interaction.data.options();
-        let user_id = options.iter().find(|option| option.name == "user-id").unwrap().value.as_string().unwrap();
+        let user_id = options
+            .iter()
+            .find(|option| option.name == "user-id")
+            .unwrap()
+            .value
+            .as_string()
+            .unwrap();
         let user_id = match UserLoginId::try_new(user_id.to_string()) {
             Ok(user_id) => user_id,
             Err(user_login_id::Error::InvalidFormat | user_login_id::Error::Empty) => {
-                let error_message = self.fluent_proxy.get_message("random-twitch-clip--error--invalid-user-id", None);
-                interaction.create_followup(&context.http, CreateInteractionResponseFollowup::new().content(error_message)).await?;
+                let error_message = self
+                    .fluent_proxy
+                    .get_message("random-twitch-clip--error--invalid-user-id", None);
+                interaction
+                    .create_followup(
+                        &context.http,
+                        CreateInteractionResponseFollowup::new().content(error_message),
+                    )
+                    .await?;
                 return Ok(());
             }
         };
-        let amount = options.iter().find(|option| option.name == "amount").and_then(|option| option.value.as_integer()).unwrap_or(1) as usize;
+        let amount = options
+            .iter()
+            .find(|option| option.name == "amount")
+            .and_then(|option| option.value.as_integer())
+            .unwrap_or(1) as usize;
 
-        let clips = match self.get_random_twitch_clip_use_case.run(&user_id, amount, &now).await {
+        let clips = match self
+            .get_random_twitch_clip_use_case
+            .run(&user_id, amount, &now)
+            .await
+        {
             Ok(result) if !result.is_empty() => result,
             Ok(_) => {
-                let error_message = self.fluent_proxy.get_message("random-twitch-clip--error--clip-not-found", None).to_string();
-                interaction.create_followup(&context.http, CreateInteractionResponseFollowup::new().content(error_message)).await?;
+                let error_message = self
+                    .fluent_proxy
+                    .get_message("random-twitch-clip--error--clip-not-found", None)
+                    .to_string();
+                interaction
+                    .create_followup(
+                        &context.http,
+                        CreateInteractionResponseFollowup::new().content(error_message),
+                    )
+                    .await?;
                 return Ok(());
             }
             Err(get_random_twitch_clip_use_case::Error::UserNotFound) => {
-                let error_message = self.fluent_proxy.get_message("random-twitch-clip--error--user-not-found", None).to_string();
-                interaction.create_followup(&context.http, CreateInteractionResponseFollowup::new().content(error_message)).await?;
+                let error_message = self
+                    .fluent_proxy
+                    .get_message("random-twitch-clip--error--user-not-found", None)
+                    .to_string();
+                interaction
+                    .create_followup(
+                        &context.http,
+                        CreateInteractionResponseFollowup::new().content(error_message),
+                    )
+                    .await?;
                 return Ok(());
             }
             Err(error) => return Err(error.into()),
@@ -78,10 +118,14 @@ impl CommandRunner for RandomTwitchClip {
             "user-login-id" => user_id.id(),
             "clips" => clips_message,
         ];
-        let result_message = self.fluent_proxy.get_message("random-twitch-clip--response--body", Some(&fluent_args));
+        let result_message = self
+            .fluent_proxy
+            .get_message("random-twitch-clip--response--body", Some(&fluent_args));
 
         let followup_response = CreateInteractionResponseFollowup::new().content(result_message);
-        interaction.create_followup(&context.http, followup_response).await?;
+        interaction
+            .create_followup(&context.http, followup_response)
+            .await?;
         Ok(())
     }
 }
@@ -109,27 +153,35 @@ impl CommandFactory for Factory {
     }
 
     fn command_specification(&self) -> CreateCommand {
-        let command_option_description = self.fluent_proxy.get_message("random-twitch-clip--command-option--user-id--description", None);
+        let command_option_description = self.fluent_proxy.get_message(
+            "random-twitch-clip--command-option--user-id--description",
+            None,
+        );
         let user_id = CreateCommandOption::new(
             CommandOptionType::String,
             "user-id",
             command_option_description,
         )
-            .required(true)
-            .min_length(1)
-            .max_length(50);
+        .required(true)
+        .min_length(1)
+        .max_length(50);
 
-        let command_option_description = self.fluent_proxy.get_message("random-twitch-clip--command-option--amount--description", None);
+        let command_option_description = self.fluent_proxy.get_message(
+            "random-twitch-clip--command-option--amount--description",
+            None,
+        );
         let amount = CreateCommandOption::new(
             CommandOptionType::Integer,
             "amount",
             command_option_description,
         )
-            .required(false)
-            .min_int_value(1)
-            .max_int_value(3);
+        .required(false)
+        .min_int_value(1)
+        .max_int_value(3);
 
-        let command_description = self.fluent_proxy.get_message("random-twitch-clip--command--description", None);
+        let command_description = self
+            .fluent_proxy
+            .get_message("random-twitch-clip--command--description", None);
         CreateCommand::new(self.command_name())
             .description(command_description)
             .add_option(user_id)
@@ -137,6 +189,9 @@ impl CommandFactory for Factory {
     }
 
     fn create(&self) -> Box<dyn CommandRunner + Send + Sync> {
-        Box::new(RandomTwitchClip::new(self.get_random_twitch_clip_use_case.clone(), self.fluent_proxy.clone()))
+        Box::new(RandomTwitchClip::new(
+            self.get_random_twitch_clip_use_case.clone(),
+            self.fluent_proxy.clone(),
+        ))
     }
 }

@@ -5,10 +5,7 @@ pub struct Channel {
 }
 
 impl Channel {
-    pub fn new(
-        title: String,
-        uploaded_video_playlist_id: Option<String>,
-    ) -> Self {
+    pub fn new(title: String, uploaded_video_playlist_id: Option<String>) -> Self {
         Self {
             title,
             uploaded_video_playlist_id,

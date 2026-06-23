@@ -1,10 +1,10 @@
 use crate::gateway::ai_image_generation_gateway::AIIMageGenerationGateway;
-use chrono::{DateTime, Utc};
-use std::sync::Arc;
-use thiserror::Error;
-use domain::model::image_generation_activity::ImageGenerationActivity;
 use crate::repository::image_generation_activity_repository;
 use crate::repository::image_generation_activity_repository::ImageGenerationActivityRepository;
+use chrono::{DateTime, Utc};
+use domain::model::image_generation_activity::ImageGenerationActivity;
+use std::sync::Arc;
+use thiserror::Error;
 
 pub struct GenerateAIImageUseCase {
     ai_image_generation_gateway: Arc<dyn AIIMageGenerationGateway + Send + Sync>,
@@ -14,7 +14,9 @@ pub struct GenerateAIImageUseCase {
 impl GenerateAIImageUseCase {
     pub fn new(
         ai_image_generation_gateway: Arc<dyn AIIMageGenerationGateway + Send + Sync>,
-        image_generation_activity_repository: Arc<dyn ImageGenerationActivityRepository + Send + Sync>,
+        image_generation_activity_repository: Arc<
+            dyn ImageGenerationActivityRepository + Send + Sync,
+        >,
     ) -> Self {
         Self {
             ai_image_generation_gateway,
@@ -30,21 +32,28 @@ impl GenerateAIImageUseCase {
     ) -> Result<UseCaseResult, UseCaseError> {
         let user_id = user_id.into();
 
-        let mut image_generation_activity = match self.image_generation_activity_repository.get(&user_id) {
-            Ok(image_generation_activity) => image_generation_activity,
-            Err(image_generation_activity_repository::Error::EntryNotFound(_)) => ImageGenerationActivity::with_key(user_id.clone())
-        };
+        let mut image_generation_activity =
+            match self.image_generation_activity_repository.get(&user_id) {
+                Ok(image_generation_activity) => image_generation_activity,
+                Err(image_generation_activity_repository::Error::EntryNotFound(_)) => {
+                    ImageGenerationActivity::with_key(user_id.clone())
+                }
+            };
         if !image_generation_activity.is_available(at) {
             return Err(UseCaseError::GenerationCountExceeded);
         }
 
         let prompt = prompt.into();
 
-        let gateway_result = self.ai_image_generation_gateway.generate_image(&prompt).await
+        let gateway_result = self
+            .ai_image_generation_gateway
+            .generate_image(&prompt)
+            .await
             .map_err(|error| UseCaseError::ImageGenerationFailed(error.into()))?;
 
         image_generation_activity.increment_count(at);
-        self.image_generation_activity_repository.set(image_generation_activity);
+        self.image_generation_activity_repository
+            .set(image_generation_activity);
 
         Ok(UseCaseResult {
             image_bytes: gateway_result.bytes,

@@ -26,11 +26,15 @@ impl AIChatActivity {
     }
 
     pub fn current_chat_count(&self, at: &DateTime<Utc>) -> u32 {
-        let Some(last_chatted_at) = self.last_chatted_at else { return self.chat_count; };
+        let Some(last_chatted_at) = self.last_chatted_at else {
+            return self.chat_count;
+        };
 
         let last_chatted_at = last_chatted_at.with_timezone(&chrono_tz::Asia::Tokyo);
         let at = at.with_timezone(&chrono_tz::Asia::Tokyo);
-        if at > last_chatted_at && at.day() != last_chatted_at.day() { return 0; }
+        if at > last_chatted_at && at.day() != last_chatted_at.day() {
+            return 0;
+        }
 
         self.chat_count
     }
@@ -59,8 +63,11 @@ mod tests {
     // Querying later on the same Tokyo day preserves count; next day resets to 0
     #[rstest]
     #[case(tokyo(3, 28, 23, 59), 1)] // same Tokyo day, later
-    #[case(tokyo(3, 29, 0, 1), 0)]   // next Tokyo day, resets
-    fn current_chat_count_across_tokyo_midnight(#[case] query_at: DateTime<Utc>, #[case] expected: u32) {
+    #[case(tokyo(3, 29, 0, 1), 0)] // next Tokyo day, resets
+    fn current_chat_count_across_tokyo_midnight(
+        #[case] query_at: DateTime<Utc>,
+        #[case] expected: u32,
+    ) {
         let mut activity = AIChatActivity::with_key("user1".to_string());
         activity.increment_chat_count(&tokyo(3, 28, 15, 0));
         assert_eq!(activity.current_chat_count(&query_at), expected);
@@ -70,7 +77,9 @@ mod tests {
     #[rstest]
     #[case(tokyo(3, 28, 12, 0))] // same timestamp
     #[case(tokyo(3, 27, 12, 0))] // earlier timestamp (different day, but at < last)
-    fn current_chat_count_should_not_reset_when_at_is_not_after_last(#[case] query_at: DateTime<Utc>) {
+    fn current_chat_count_should_not_reset_when_at_is_not_after_last(
+        #[case] query_at: DateTime<Utc>,
+    ) {
         let mut activity = AIChatActivity::with_key("user1".to_string());
         activity.increment_chat_count(&tokyo(3, 28, 12, 0));
         assert_eq!(activity.current_chat_count(&query_at), 1);

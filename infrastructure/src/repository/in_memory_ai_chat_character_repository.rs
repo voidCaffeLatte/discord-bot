@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::{fs, io};
-use std::path::Path;
+use application::repository::ai_chat_character_repository::{AIChatCharacterRepository, Error};
 use domain::model::ai_chat_character;
 use domain::model::ai_chat_character::AIChatCharacter;
-use application::repository::ai_chat_character_repository::{AIChatCharacterRepository, Error};
+use std::collections::HashMap;
+use std::path::Path;
+use std::{fs, io};
 
 pub struct InMemoryAIChatCharacterRepository {
     ai_chat_characters: HashMap<ai_chat_character::Id, AIChatCharacter>,
@@ -14,7 +14,8 @@ impl InMemoryAIChatCharacterRepository {
         let character_file_text = fs::read_to_string(file_path)?;
         let content: dto::Content = toml::from_str(&character_file_text)?;
 
-        let ai_chat_characters = content.characters
+        let ai_chat_characters = content
+            .characters
             .into_iter()
             .enumerate()
             .map(|(index, character)| {
@@ -35,7 +36,11 @@ impl InMemoryAIChatCharacterRepository {
 impl AIChatCharacterRepository for InMemoryAIChatCharacterRepository {
     fn get(&self, ids: &[ai_chat_character::Id]) -> Result<Vec<&AIChatCharacter>, Error> {
         ids.iter()
-            .map(|id| self.ai_chat_characters.get(id).ok_or(Error::CharacterNotFound(id.clone())))
+            .map(|id| {
+                self.ai_chat_characters
+                    .get(id)
+                    .ok_or(Error::CharacterNotFound(id.clone()))
+            })
             .collect()
     }
 

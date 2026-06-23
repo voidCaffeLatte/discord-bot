@@ -7,7 +7,7 @@ impl UserLoginId {
         if id.is_empty() {
             return Err(Error::Empty);
         }
-        
+
         // TODO: Add length validation
 
         static REGEX: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
@@ -51,7 +51,10 @@ mod tests {
 
     #[test]
     fn try_new_should_return_error_when_empty() {
-        assert!(matches!(UserLoginId::try_new("".to_string()), Err(Error::Empty)));
+        assert!(matches!(
+            UserLoginId::try_new("".to_string()),
+            Err(Error::Empty)
+        ));
     }
 
     #[rstest]
@@ -61,6 +64,9 @@ mod tests {
     #[case("ABC")]
     #[case("hello world")]
     fn try_new_should_return_error_for_invalid_format(#[case] input: &str) {
-        assert!(matches!(UserLoginId::try_new(input.to_string()), Err(Error::InvalidFormat)));
+        assert!(matches!(
+            UserLoginId::try_new(input.to_string()),
+            Err(Error::InvalidFormat)
+        ));
     }
 }

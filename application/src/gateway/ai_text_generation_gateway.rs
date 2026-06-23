@@ -24,15 +24,8 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn new(
-        role: Role,
-        message: String,
-    ) -> Self
-    {
-        Self {
-            role,
-            message,
-        }
+    pub fn new(role: Role, message: String) -> Self {
+        Self { role, message }
     }
 
     pub fn role(&self) -> &Role {

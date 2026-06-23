@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
+use domain::value_object::twitch::access_token::AccessToken;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
-use domain::value_object::twitch::access_token::AccessToken;
 
 pub struct AccessTokenGateway {
     http_client: reqwest::Client,
@@ -30,19 +30,21 @@ impl AccessTokenGateway {
     pub async fn get_access_token(&self, at: &DateTime<Utc>) -> Result<AccessToken, Error> {
         let mut access_token_guard = self.access_token.lock().await;
         if let Some(access_token) = access_token_guard.as_ref()
-            && !access_token.is_expired(at) {
-                let is_valid = self.is_valid_access_token(access_token).await?;
-                if is_valid {
-                    return Ok(access_token.clone());
-                }
+            && !access_token.is_expired(at)
+        {
+            let is_valid = self.is_valid_access_token(access_token).await?;
+            if is_valid {
+                return Ok(access_token.clone());
             }
+        }
 
         let mut parameters = HashMap::new();
         parameters.insert("client_id", self.app_client_id.as_str());
         parameters.insert("client_secret", self.app_client_secret.as_str());
         parameters.insert("grant_type", "client_credentials");
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .post(Self::TOKEN_API_BASE_URL)
             .form(&parameters)
             .send()
@@ -63,7 +65,8 @@ impl AccessTokenGateway {
     }
 
     async fn is_valid_access_token(&self, access_token: &AccessToken) -> Result<bool, Error> {
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(Self::VALIDATE_API_BASE_URL)
             .bearer_auth(access_token.access_token())
             .send()
@@ -88,5 +91,5 @@ mod dto {
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     #[error("failed to request Twitch API access token")]
-    APIRequestFailed(#[source] anyhow::Error)
+    APIRequestFailed(#[source] anyhow::Error),
 }

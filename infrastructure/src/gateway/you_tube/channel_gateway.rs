@@ -11,10 +11,7 @@ pub struct ChannelGateway {
 impl ChannelGateway {
     const BASE_URL: &'static str = "https://www.googleapis.com/youtube/v3/channels";
 
-    pub fn new(
-        you_tube_data_api_key: String,
-        http_client: reqwest::Client,
-    ) -> Self {
+    pub fn new(you_tube_data_api_key: String, http_client: reqwest::Client) -> Self {
         Self {
             you_tube_data_api_key,
             http_client,
@@ -25,8 +22,14 @@ impl ChannelGateway {
 #[async_trait::async_trait]
 impl application::gateway::you_tube::channel_gateway::ChannelGateway for ChannelGateway {
     async fn get_by_handle(&self, handle: &ChannelHandle) -> Result<Channel, Error> {
-        let response = self.http_client.get(Self::BASE_URL)
-            .query(&[("key", self.you_tube_data_api_key.as_str()), ("part", "id,contentDetails,snippet"), ("forHandle", handle.handle())])
+        let response = self
+            .http_client
+            .get(Self::BASE_URL)
+            .query(&[
+                ("key", self.you_tube_data_api_key.as_str()),
+                ("part", "id,contentDetails,snippet"),
+                ("forHandle", handle.handle()),
+            ])
             .send()
             .await
             .map_err(|e| Error::RetrievalFailed(e.into()))?
@@ -36,16 +39,22 @@ impl application::gateway::you_tube::channel_gateway::ChannelGateway for Channel
             .await
             .map_err(|error| Error::InvalidResponse(error.into()))?;
 
-        let item = response.items.as_ref()
+        let item = response
+            .items
+            .as_ref()
             .filter(|items| !items.is_empty())
             .and_then(|items| items.first())
             .ok_or(Error::ChannelNotFound)?;
 
-        let title = item.snippet.as_ref()
+        let title = item
+            .snippet
+            .as_ref()
             .and_then(|snippet| snippet.title.clone())
             .unwrap_or_default();
 
-        let uploaded_video_playlist_id = item.content_details.as_ref()
+        let uploaded_video_playlist_id = item
+            .content_details
+            .as_ref()
             .and_then(|content_details| content_details.related_playlists.as_ref())
             .map(|related_playlists| related_playlists.uploads.clone());
 

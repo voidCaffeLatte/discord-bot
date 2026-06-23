@@ -32,11 +32,15 @@ impl ImageGenerationActivity {
     }
 
     fn current_count(&self, at: &DateTime<Utc>) -> u32 {
-        let Some(last_generated_at) = self.last_generated_at else { return self.count; };
+        let Some(last_generated_at) = self.last_generated_at else {
+            return self.count;
+        };
 
         let last_generated_at = last_generated_at.with_timezone(&chrono_tz::Asia::Tokyo);
         let at = at.with_timezone(&chrono_tz::Asia::Tokyo);
-        if at > last_generated_at && at.day() != last_generated_at.day() { return 0; }
+        if at > last_generated_at && at.day() != last_generated_at.day() {
+            return 0;
+        }
 
         self.count
     }

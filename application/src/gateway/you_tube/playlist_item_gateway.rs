@@ -1,6 +1,6 @@
-use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use domain::value_object::you_tube::playlist_item::PlaylistItem;
+use std::sync::Arc;
 
 #[async_trait::async_trait]
 pub trait PlaylistItemGateway {

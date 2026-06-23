@@ -1,4 +1,6 @@
-use application::gateway::ai_image_generation_gateway::{AIIMageGenerationGateway, GatewayError, Image};
+use application::gateway::ai_image_generation_gateway::{
+    AIIMageGenerationGateway, GatewayError, Image,
+};
 use async_trait::async_trait;
 use gemini::GeminiClient;
 

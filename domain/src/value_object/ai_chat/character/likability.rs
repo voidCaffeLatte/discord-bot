@@ -13,11 +13,7 @@ impl Likability {
             return Err(Error::InvalidRange(Self::MIN, Self::MAX, value));
         }
 
-        Ok(
-            Self {
-                value
-            }
-        )
+        Ok(Self { value })
     }
 
     pub fn value(&self) -> i32 {
@@ -34,7 +30,7 @@ impl Default for Likability {
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("value must be between {0} and {1} - length: {2}")]
-    InvalidRange(i32, i32, i32)
+    InvalidRange(i32, i32, i32),
 }
 
 #[cfg(test)]
@@ -58,7 +54,10 @@ mod tests {
     #[case(i32::MIN)]
     #[case(i32::MAX)]
     fn new_should_reject_out_of_range(#[case] value: i32) {
-        assert!(matches!(Likability::new(value), Err(Error::InvalidRange(_, _, _))));
+        assert!(matches!(
+            Likability::new(value),
+            Err(Error::InvalidRange(_, _, _))
+        ));
     }
 
     #[test]

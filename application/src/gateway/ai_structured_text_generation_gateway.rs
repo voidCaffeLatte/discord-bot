@@ -1,6 +1,6 @@
+use crate::gateway::ai_text_generation_gateway::{GatewayError, Message};
 use async_trait::async_trait;
 use domain::value_object::ai_text::WebReference;
-use crate::gateway::ai_text_generation_gateway::{GatewayError, Message};
 
 #[async_trait]
 pub trait AIStructuredTextGenerationGateway<T: Send + Sync> {
@@ -18,7 +18,10 @@ pub struct StructuredAIText<T> {
 
 impl<T> StructuredAIText<T> {
     pub fn new(data: T, web_references: Option<Vec<WebReference>>) -> Self {
-        Self { data, web_references }
+        Self {
+            data,
+            web_references,
+        }
     }
 
     pub fn into_parts(self) -> (T, Option<Vec<WebReference>>) {

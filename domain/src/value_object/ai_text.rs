@@ -5,10 +5,7 @@ pub struct AIText {
 }
 
 impl AIText {
-    pub fn new(
-        text: String,
-        web_references: Option<Vec<WebReference>>,
-    ) -> Self {
+    pub fn new(text: String, web_references: Option<Vec<WebReference>>) -> Self {
         Self {
             text,
             web_references,
@@ -31,14 +28,8 @@ pub struct WebReference {
 }
 
 impl WebReference {
-    pub fn new(
-        title: String,
-        url: String,
-    ) -> Self {
-        Self {
-            title,
-            url,
-        }
+    pub fn new(title: String, url: String) -> Self {
+        Self { title, url }
     }
 
     pub fn title(&self) -> &str {

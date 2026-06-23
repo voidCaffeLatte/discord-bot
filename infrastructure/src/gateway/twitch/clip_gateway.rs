@@ -1,13 +1,13 @@
-use application::gateway::twitch::clip_gateway;
 use crate::gateway::twitch;
+use application::gateway::twitch::clip_gateway;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
+use common::cached_value::CachedValue;
+use dashmap::DashMap;
+use domain::value_object::twitch::clip::Clip;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
-use dashmap::DashMap;
-use common::cached_value::CachedValue;
-use domain::value_object::twitch::clip::Clip;
 
 pub struct ClipGateway {
     http_client: reqwest::Client,
@@ -43,15 +43,23 @@ impl clip_gateway::ClipGateway for ClipGateway {
         broadcaster_id: &str,
         at: &DateTime<Utc>,
     ) -> Result<Arc<Vec<Clip>>, clip_gateway::Error> {
-        if let Some(clips) = self.cached_clips.get(broadcaster_id).as_ref()
-            .and_then(|clips| clips.available_value(at)) {
+        if let Some(clips) = self
+            .cached_clips
+            .get(broadcaster_id)
+            .as_ref()
+            .and_then(|clips| clips.available_value(at))
+        {
             return Ok(clips.clone());
         }
 
-        let access_token = self.twitch_access_token_gateway.get_access_token(at).await
+        let access_token = self
+            .twitch_access_token_gateway
+            .get_access_token(at)
+            .await
             .map_err(|error| clip_gateway::Error::RetrievalFailed(error.into()))?;
 
-        let mut results: Vec<Clip> = Vec::with_capacity(Self::CLIP_COUNT_PER_FETCH * Self::FETCH_COUNT);
+        let mut results: Vec<Clip> =
+            Vec::with_capacity(Self::CLIP_COUNT_PER_FETCH * Self::FETCH_COUNT);
         let mut pagination_cursor: Option<String> = None;
 
         for _ in 0..Self::FETCH_COUNT {
@@ -62,7 +70,8 @@ impl clip_gateway::ClipGateway for ClipGateway {
                 query_parameters.insert("after", pagination_cursor);
             }
 
-            let response = self.http_client
+            let response = self
+                .http_client
                 .get(Self::BASE_URL)
                 .bearer_auth(access_token.access_token())
                 .header("Client-Id", &self.twitch_app_client_id)
@@ -77,15 +86,19 @@ impl clip_gateway::ClipGateway for ClipGateway {
                 .map_err(|error| clip_gateway::Error::InvalidResponse(error.into()))?;
 
             let raw_clips = response.data.unwrap_or_default();
-            let clips = raw_clips.iter()
+            let clips = raw_clips
+                .iter()
                 .map(|value| value.try_into())
                 .collect::<Result<Vec<Clip>, _>>()?;
 
             results.extend(clips);
 
-            let next_pagination_cursor = response.pagination
+            let next_pagination_cursor = response
+                .pagination
                 .and_then(|pagination| pagination.cursor.clone());
-            let Some(next_pagination_cursor) = next_pagination_cursor else { break; };
+            let Some(next_pagination_cursor) = next_pagination_cursor else {
+                break;
+            };
             pagination_cursor = Some(next_pagination_cursor);
 
             tokio::time::sleep(Duration::from_millis(20)).await;
@@ -94,7 +107,9 @@ impl clip_gateway::ClipGateway for ClipGateway {
         let results = Arc::new(results);
 
         let cache = CachedValue::new(
-            results.clone(), *at, chrono::Duration::hours(Self::CACHE_AVAILABLE_HOURS),
+            results.clone(),
+            *at,
+            chrono::Duration::hours(Self::CACHE_AVAILABLE_HOURS),
         );
         self.cached_clips.insert(broadcaster_id.to_string(), cache);
 
@@ -103,10 +118,10 @@ impl clip_gateway::ClipGateway for ClipGateway {
 }
 
 mod dto {
-    use std::time::Duration;
-    use chrono::{DateTime, Utc};
     use application::gateway::twitch::clip_gateway;
+    use chrono::{DateTime, Utc};
     use domain::value_object::twitch::clip::Clip;
+    use std::time::Duration;
 
     #[derive(Debug, serde::Deserialize)]
     pub struct Response {
@@ -131,7 +146,13 @@ mod dto {
                 .map_err(|error| clip_gateway::Error::InvalidResponse(error.into()))?
                 .with_timezone(&Utc);
             let duration = Duration::from_secs_f32(value.duration);
-            Ok(Clip::new(value.url.clone(), value.title.clone(), value.view_count, created_at, duration))
+            Ok(Clip::new(
+                value.url.clone(),
+                value.title.clone(),
+                value.view_count,
+                created_at,
+                duration,
+            ))
         }
     }
 
@@ -140,4 +161,3 @@ mod dto {
         pub cursor: Option<String>,
     }
 }
-

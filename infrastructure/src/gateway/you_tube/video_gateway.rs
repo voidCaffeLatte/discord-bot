@@ -2,7 +2,6 @@ use application;
 use application::gateway::you_tube::video_gateway::Error;
 use domain::value_object::you_tube::video::Video;
 
-
 pub struct VideoGateway {
     you_tube_data_api_key: String,
     http_client: reqwest::Client,
@@ -11,10 +10,7 @@ pub struct VideoGateway {
 impl VideoGateway {
     const BASE_URL: &'static str = "https://www.googleapis.com/youtube/v3/videos";
 
-    pub fn new(
-        you_tube_data_api_key: String,
-        http_client: reqwest::Client,
-    ) -> Self {
+    pub fn new(you_tube_data_api_key: String, http_client: reqwest::Client) -> Self {
         Self {
             you_tube_data_api_key,
             http_client,
@@ -27,11 +23,16 @@ impl application::gateway::you_tube::video_gateway::VideoGateway for VideoGatewa
     async fn get_by_video_id(&self, video_id: &str) -> Result<Video, Error> {
         let queries = vec![
             ("key", self.you_tube_data_api_key.clone()),
-            ("part", "id,snippet,status,contentDetails,statistics".to_string()),
+            (
+                "part",
+                "id,snippet,status,contentDetails,statistics".to_string(),
+            ),
             ("id", video_id.to_string()),
         ];
 
-        let response = self.http_client.get(Self::BASE_URL)
+        let response = self
+            .http_client
+            .get(Self::BASE_URL)
             .query(&queries)
             .send()
             .await
@@ -42,7 +43,9 @@ impl application::gateway::you_tube::video_gateway::VideoGateway for VideoGatewa
             .await
             .map_err(|error| Error::InvalidResponse(error.into()))?;
 
-        let item = response.items.as_ref()
+        let item = response
+            .items
+            .as_ref()
             .and_then(|items| items.first())
             .ok_or(Error::VideoNotFound)?;
 
@@ -77,30 +80,54 @@ mod dto {
         type Error = video_gateway::Error;
 
         fn try_from(value: &Item) -> Result<Self, Self::Error> {
-            let privacy_status = value.status
+            let privacy_status = value
+                .status
                 .as_ref()
                 .and_then(|status| status.into())
-                .unwrap_or_else(||
-                    {
-                        warn!("Failed to access to privacy status. Use \"Private\" instead.");
-                        PrivacyStatus::Private
-                    });
-            let title = value.snippet.as_ref()
+                .unwrap_or_else(|| {
+                    warn!("Failed to access to privacy status. Use \"Private\" instead.");
+                    PrivacyStatus::Private
+                });
+            let title = value
+                .snippet
+                .as_ref()
                 .and_then(|snippet| snippet.title.clone())
-                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("title field is missing in response")))?;
-            let view_count = value.statistics.as_ref()
+                .ok_or_else(|| {
+                    Self::Error::InvalidResponse(anyhow::anyhow!(
+                        "title field is missing in response"
+                    ))
+                })?;
+            let view_count = value
+                .statistics
+                .as_ref()
                 .and_then(|stats| stats.view_count.as_ref())
                 .and_then(|view_count| view_count.parse::<u64>().ok())
-                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("view count field is missing in response")))?;
-            let published_at = value.snippet.as_ref()
+                .ok_or_else(|| {
+                    Self::Error::InvalidResponse(anyhow::anyhow!(
+                        "view count field is missing in response"
+                    ))
+                })?;
+            let published_at = value
+                .snippet
+                .as_ref()
                 .and_then(|snippet| snippet.published_at.as_ref())
-                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("published_at field is missing in response")))?;
+                .ok_or_else(|| {
+                    Self::Error::InvalidResponse(anyhow::anyhow!(
+                        "published_at field is missing in response"
+                    ))
+                })?;
             let published_at = DateTime::parse_from_rfc3339(published_at)
                 .map_err(|error| Self::Error::InvalidResponse(error.into()))?
                 .with_timezone(&Utc);
-            let duration = value.content_details.as_ref()
+            let duration = value
+                .content_details
+                .as_ref()
                 .and_then(|detail| detail.duration.as_ref())
-                .ok_or_else(|| Self::Error::InvalidResponse(anyhow::anyhow!("duration field is missing in response")))?;
+                .ok_or_else(|| {
+                    Self::Error::InvalidResponse(anyhow::anyhow!(
+                        "duration field is missing in response"
+                    ))
+                })?;
             let duration = iso8601::duration(duration)
                 .map_err(|error| Self::Error::InvalidResponse(anyhow::anyhow!("{error:?}")))?
                 .into();
@@ -131,15 +158,16 @@ mod dto {
 
     impl From<&Status> for Option<PrivacyStatus> {
         fn from(value: &Status) -> Self {
-            value.privacy_status.as_ref().and_then(|status| {
-                match status.as_str() {
+            value
+                .privacy_status
+                .as_ref()
+                .and_then(|status| match status.as_str() {
                     "public" => Some(PrivacyStatus::Public),
                     "private" => Some(PrivacyStatus::Private),
                     "unlisted" => Some(PrivacyStatus::Unlisted),
                     "privacyStatusUnspecified" => Some(PrivacyStatus::Unspecified),
-                    _ => None
-                }
-            })
+                    _ => None,
+                })
         }
     }
 

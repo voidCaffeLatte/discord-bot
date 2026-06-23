@@ -2,13 +2,13 @@ use async_trait::async_trait;
 use serenity::all::{CommandInteraction, Context};
 use serenity::builder::CreateCommand;
 
-pub mod ping;
-pub mod choices;
 pub mod ai_chat;
 pub mod ai_conversation;
-pub mod random_you_tube_video;
 pub mod ai_image;
+pub mod choices;
+pub mod ping;
 pub mod random_twitch_clip;
+pub mod random_you_tube_video;
 
 #[async_trait]
 pub trait CommandRunner {

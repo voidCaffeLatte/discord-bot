@@ -32,8 +32,7 @@ impl AIChatHistory {
 
     pub fn add_chat_entry(&mut self, chat_entry: ChatEntry) {
         self.chat_entries.push(chat_entry);
-        if self.chat_entries.len() as u32 > Self::MAX_ENTRY_COUNT
-        {
+        if self.chat_entries.len() as u32 > Self::MAX_ENTRY_COUNT {
             self.chat_entries.remove(0);
         }
     }
@@ -93,4 +92,3 @@ mod tests {
         }
     }
 }
-

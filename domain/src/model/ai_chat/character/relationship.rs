@@ -34,7 +34,7 @@ impl Relationship {
         &self.likability
     }
 
-    pub fn change_likability(&mut self, amount: i32) -> Result<(), likability::Error>{
+    pub fn change_likability(&mut self, amount: i32) -> Result<(), likability::Error> {
         let new_value = (self.likability.value() + amount).clamp(Likability::MIN, Likability::MAX);
         let new_likability = Likability::new(new_value)?;
         self.likability = new_likability;
@@ -57,10 +57,10 @@ mod tests {
     #[case(0, 10, 10)]
     #[case(0, -10, -10)]
     #[case(50, 0, 50)]
-    #[case(90, 20, 100)]    // clamped to MAX
+    #[case(90, 20, 100)] // clamped to MAX
     #[case(-90, -20, -100)] // clamped to MIN
-    #[case(0, 200, 100)]    // large positive clamped
-    #[case(0, -200, -100)]  // large negative clamped
+    #[case(0, 200, 100)] // large positive clamped
+    #[case(0, -200, -100)] // large negative clamped
     fn change_likability_should_update_and_clamp(
         #[case] initial: i32,
         #[case] change: i32,

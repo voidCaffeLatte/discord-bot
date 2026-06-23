@@ -1,12 +1,12 @@
-use application;
 use crate::gateway::twitch;
+use application;
+use application::gateway::twitch::user_gateway;
 use async_trait::async_trait;
-use std::collections::HashMap;
-use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use domain::value_object::twitch::user::User;
 use domain::value_object::twitch::user_login_id::UserLoginId;
-use application::gateway::twitch::user_gateway;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub struct UserGateway {
     http_client: reqwest::Client,
@@ -37,13 +37,17 @@ impl user_gateway::UserGateway for UserGateway {
         user_login_id: &UserLoginId,
         at: &DateTime<Utc>,
     ) -> Result<User, user_gateway::Error> {
-        let access_token = self.twitch_access_token_gateway.get_access_token(at).await
+        let access_token = self
+            .twitch_access_token_gateway
+            .get_access_token(at)
+            .await
             .map_err(|error| user_gateway::Error::RetrievalFailed(error.into()))?;
 
         let mut query_parameters = HashMap::new();
         query_parameters.insert("login", user_login_id.id());
 
-        let response = self.http_client
+        let response = self
+            .http_client
             .get(Self::BASE_URL)
             .bearer_auth(access_token.access_token())
             .header("Client-Id", &self.twitch_app_client_id)
@@ -57,16 +61,20 @@ impl user_gateway::UserGateway for UserGateway {
             .await
             .map_err(|error| user_gateway::Error::InvalidResponse(error.into()))?;
 
-        let user_data = response.data.as_ref()
+        let user_data = response
+            .data
+            .as_ref()
             .and_then(|data| data.first())
             .ok_or(user_gateway::Error::UserNotFound)?;
-        let id = user_data.id.as_ref()
-            .ok_or_else(|| user_gateway::Error::InvalidResponse(anyhow::anyhow!("user id field is missing in response")))?;
+        let id = user_data.id.as_ref().ok_or_else(|| {
+            user_gateway::Error::InvalidResponse(anyhow::anyhow!(
+                "user id field is missing in response"
+            ))
+        })?;
 
         Ok(User::new(id.clone()))
     }
 }
-
 
 mod dto {
     #[derive(Debug, serde::Deserialize)]
@@ -81,4 +89,3 @@ mod dto {
         // pub display_name: String,
     }
 }
-

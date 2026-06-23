@@ -1,37 +1,40 @@
-use serenity::all::{Command, Context, CreateInteractionResponse, CreateInteractionResponseFollowup, CreateInteractionResponseMessage, EventHandler, GatewayIntents, Interaction, Ready};
-use serenity::{async_trait, Client};
+use crate::presentation::command;
+use crate::presentation::command::CommandFactory;
+use crate::presentation::modal_interaction::ModalInteractionFactory;
+use crate::presentation::webhook_logger::WebhookLogger;
+use application::use_case::chat_ai_characters_use_case::ChatAICharactersUseCase;
+use application::use_case::chat_ai_use_case::ChatAIUseCase;
+use application::use_case::generate_ai_image_use_case::GenerateAIImageUseCase;
+use application::use_case::get_random_twitch_clip_use_case::GetRandomTwitchClipUseCase;
+use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
+use common::fluent_proxy::FluentProxy;
+use dashmap::DashSet;
+use fluent::FluentResource;
+use fluent::concurrent::FluentBundle;
+use gemini::GeminiClient;
+use infrastructure::gateway::gemini_image_generation_gateway::GeminiImageGenerationGateway;
+use infrastructure::gateway::gemini_text_generation_gateway::GeminiTextGenerationGateway;
+use infrastructure::gateway::twitch::access_token_gateway::AccessTokenGateway;
+use infrastructure::gateway::you_tube;
+use infrastructure::repository::ai_chat;
+use infrastructure::repository::in_memory_ai_chat_activity_repository::InMemoryAIChatActivityRepository;
+use infrastructure::repository::in_memory_ai_chat_character_repository::InMemoryAIChatCharacterRepository;
+use infrastructure::repository::in_memory_ai_chat_history_repository::InMemoryAIChatHistoryRepository;
+use infrastructure::repository::in_memory_image_generation_activity_repository::InMemoryImageGenerationActivityRepository;
+use serenity::all::{
+    Command, Context, CreateInteractionResponse, CreateInteractionResponseFollowup,
+    CreateInteractionResponseMessage, EventHandler, GatewayIntents, Interaction, Ready,
+};
+use serenity::{Client, async_trait};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
-use dashmap::DashSet;
-use fluent::FluentResource;
-use fluent::concurrent::FluentBundle;
 use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::util::SubscriberInitExt;
 use unic_langid::LanguageIdentifier;
-use application::use_case::chat_ai_characters_use_case::ChatAICharactersUseCase;
-use application::use_case::chat_ai_use_case::ChatAIUseCase;
-use application::use_case::generate_ai_image_use_case::GenerateAIImageUseCase;
-use application::use_case::get_random_twitch_clip_use_case::GetRandomTwitchClipUseCase;
-use crate::presentation::command;
-use crate::presentation::command::CommandFactory;
-use crate::presentation::modal_interaction::ModalInteractionFactory;
-use crate::presentation::webhook_logger::WebhookLogger;
-use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
-use gemini::GeminiClient;
-use infrastructure::gateway::gemini_text_generation_gateway::GeminiTextGenerationGateway;
-use infrastructure::gateway::gemini_image_generation_gateway::GeminiImageGenerationGateway;
-use common::fluent_proxy::FluentProxy;
-use infrastructure::gateway::twitch::access_token_gateway::AccessTokenGateway;
-use infrastructure::gateway::you_tube;
-use infrastructure::repository::ai_chat;
-use infrastructure::repository::in_memory_ai_chat_history_repository::InMemoryAIChatHistoryRepository;
-use infrastructure::repository::in_memory_ai_chat_character_repository::InMemoryAIChatCharacterRepository;
-use infrastructure::repository::in_memory_ai_chat_activity_repository::InMemoryAIChatActivityRepository;
-use infrastructure::repository::in_memory_image_generation_activity_repository::InMemoryImageGenerationActivityRepository;
 
 mod presentation;
 
@@ -47,8 +50,9 @@ async fn main() {
     bundle.add_resource(resource).unwrap();
     let source = std::fs::read_to_string("./resource/locale/ja-JP.override.ftl");
     if let Ok(source) = source {
-        let resource = FluentResource::try_new(source)
-            .expect("Can create Fluent resource from File \"./resource/locale/ja-JP.override.ftl\"");
+        let resource = FluentResource::try_new(source).expect(
+            "Can create Fluent resource from File \"./resource/locale/ja-JP.override.ftl\"",
+        );
         bundle.add_resource_overriding(resource);
         bundle.set_use_isolating(false); // Japanese-only, no bidirectional text needed
     }
@@ -64,29 +68,38 @@ async fn main() {
 
     let http_client = reqwest::Client::new();
 
-    let gemini_api_key = std::env::var("GEMINI_API_KEY").expect("Environment variable \"GEMINI_API_KEY\" is specified");
+    let gemini_api_key = std::env::var("GEMINI_API_KEY")
+        .expect("Environment variable \"GEMINI_API_KEY\" is specified");
     let gemini_text_client = GeminiClient::new(
-        gemini_api_key.clone(), reqwest::Client::new(), "gemini-3-flash-preview".to_string(),
+        gemini_api_key.clone(),
+        reqwest::Client::new(),
+        "gemini-3-flash-preview".to_string(),
     );
     let ai_text_generation_gateway = Arc::new(GeminiTextGenerationGateway::new(gemini_text_client));
 
-    let twitch_app_client_id = std::env::var("TWITCH_APP_CLIENT_ID").expect("Environment variable \"TWITCH_APP_CLIENT_ID\" is specified");
-    let twitch_app_client_secret = std::env::var("TWITCH_APP_CLIENT_SECRET").expect("Environment variable \"TWITCH_APP_CLIENT_SECRET\" is specified");
+    let twitch_app_client_id = std::env::var("TWITCH_APP_CLIENT_ID")
+        .expect("Environment variable \"TWITCH_APP_CLIENT_ID\" is specified");
+    let twitch_app_client_secret = std::env::var("TWITCH_APP_CLIENT_SECRET")
+        .expect("Environment variable \"TWITCH_APP_CLIENT_SECRET\" is specified");
     let twitch_access_token_gateway = Arc::new(AccessTokenGateway::new(
         http_client.clone(),
         twitch_app_client_id.clone(),
         twitch_app_client_secret.clone(),
     ));
-    let twitch_user_gateway = Arc::new(infrastructure::gateway::twitch::user_gateway::UserGateway::new(
-        http_client.clone(),
-        twitch_app_client_id.clone(),
-        twitch_access_token_gateway.clone(),
-    ));
-    let twitch_clip_gateway = Arc::new(infrastructure::gateway::twitch::clip_gateway::ClipGateway::new(
-        http_client.clone(),
-        twitch_app_client_id.clone(),
-        twitch_access_token_gateway.clone(),
-    ));
+    let twitch_user_gateway = Arc::new(
+        infrastructure::gateway::twitch::user_gateway::UserGateway::new(
+            http_client.clone(),
+            twitch_app_client_id.clone(),
+            twitch_access_token_gateway.clone(),
+        ),
+    );
+    let twitch_clip_gateway = Arc::new(
+        infrastructure::gateway::twitch::clip_gateway::ClipGateway::new(
+            http_client.clone(),
+            twitch_app_client_id.clone(),
+            twitch_access_token_gateway.clone(),
+        ),
+    );
     let get_random_twitch_clip_use_case = Arc::new(GetRandomTwitchClipUseCase::new(
         twitch_clip_gateway.clone(),
         twitch_user_gateway.clone(),
@@ -94,11 +107,14 @@ async fn main() {
 
     let ai_chat_character_repository = Arc::new(
         InMemoryAIChatCharacterRepository::try_new(Path::new("./resource/character.toml"))
-            .expect("Valid file \"resource/character.toml\" is required")
+            .expect("Valid file \"resource/character.toml\" is required"),
     );
     let ai_chat_history_repository = Arc::new(InMemoryAIChatHistoryRepository::new());
     let ai_chat_activity_repository = Arc::new(InMemoryAIChatActivityRepository::new());
-    let ai_chat_character_relationship_repository = Arc::new(ai_chat::character::in_memory_relationship_repository::InMemoryRelationshipRepository::new());
+    let ai_chat_character_relationship_repository = Arc::new(
+        ai_chat::character::in_memory_relationship_repository::InMemoryRelationshipRepository::new(
+        ),
+    );
     let chat_ai_use_case = Arc::new(ChatAIUseCase::new(
         ai_text_generation_gateway.clone(),
         ai_chat_character_repository.clone(),
@@ -107,33 +123,38 @@ async fn main() {
         ai_chat_character_relationship_repository.clone(),
         fluent_proxy.clone(),
     ));
-    let chat_ai_characters_use_case = Arc::new(
-        ChatAICharactersUseCase::new(
-            ai_text_generation_gateway.clone(),
-            ai_chat_character_repository.clone(),
-            ai_chat_activity_repository.clone(),
-            fluent_proxy.clone(),
-        ));
+    let chat_ai_characters_use_case = Arc::new(ChatAICharactersUseCase::new(
+        ai_text_generation_gateway.clone(),
+        ai_chat_character_repository.clone(),
+        ai_chat_activity_repository.clone(),
+        fluent_proxy.clone(),
+    ));
 
     let gemini_image_client = GeminiClient::new(
-        gemini_api_key, reqwest::Client::new(), "gemini-3.1-flash-image-preview".to_string(),
+        gemini_api_key,
+        reqwest::Client::new(),
+        "gemini-3.1-flash-image-preview".to_string(),
     );
-    let gemini_image_generation_gateway = Arc::new(GeminiImageGenerationGateway::new(gemini_image_client));
-    let image_generation_activity_repository = Arc::new(InMemoryImageGenerationActivityRepository::new());
+    let gemini_image_generation_gateway =
+        Arc::new(GeminiImageGenerationGateway::new(gemini_image_client));
+    let image_generation_activity_repository =
+        Arc::new(InMemoryImageGenerationActivityRepository::new());
     let generate_ai_image_use_case = Arc::new(GenerateAIImageUseCase::new(
         gemini_image_generation_gateway.clone(),
         image_generation_activity_repository.clone(),
     ));
 
-    let you_tube_data_api_key = std::env::var("YOU_TUBE_DATA_API_KEY").expect("Environemnt variable \"YOU_TUBE_DATA_API_KEY\" is specified");
+    let you_tube_data_api_key = std::env::var("YOU_TUBE_DATA_API_KEY")
+        .expect("Environemnt variable \"YOU_TUBE_DATA_API_KEY\" is specified");
     let you_tube_channel_gateway = Arc::new(you_tube::channel_gateway::ChannelGateway::new(
         you_tube_data_api_key.clone(),
         http_client.clone(),
     ));
-    let you_tube_playlist_item_gateway = Arc::new(you_tube::playlist_item_gateway::PlaylistItemGateway::new(
-        you_tube_data_api_key.clone(),
-        http_client.clone(),
-    ));
+    let you_tube_playlist_item_gateway =
+        Arc::new(you_tube::playlist_item_gateway::PlaylistItemGateway::new(
+            you_tube_data_api_key.clone(),
+            http_client.clone(),
+        ));
     let you_tube_video_gateway = Arc::new(you_tube::video_gateway::VideoGateway::new(
         you_tube_data_api_key.clone(),
         http_client.clone(),
@@ -148,12 +169,8 @@ async fn main() {
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::DIRECT_MESSAGES;
 
     let command_factories: Vec<Box<dyn CommandFactory + Send + Sync>> = vec![
-        Box::new(command::ping::Factory::new(
-            fluent_proxy.clone()
-        )),
-        Box::new(command::choices::Factory::new(
-            fluent_proxy.clone(),
-        )),
+        Box::new(command::ping::Factory::new(fluent_proxy.clone())),
+        Box::new(command::choices::Factory::new(fluent_proxy.clone())),
         Box::new(command::ai_chat::Factory::new(
             ai_chat_character_repository.clone(),
             chat_ai_use_case.clone(),
@@ -202,7 +219,12 @@ async fn main() {
         }
     };
 
-    let handler = Handler::new(command_factories, modal_interaction_factories, webhook_logger, fluent_proxy.clone());
+    let handler = Handler::new(
+        command_factories,
+        modal_interaction_factories,
+        webhook_logger,
+        fluent_proxy.clone(),
+    );
     let mut client = Client::builder(&token, intents)
         .event_handler(handler)
         .await
@@ -224,7 +246,10 @@ struct Handler {
 impl Handler {
     fn new(
         command_factories: HashMap<String, Box<dyn CommandFactory + Send + Sync>>,
-        modal_interaction_factories: HashMap<String, Box<dyn ModalInteractionFactory + Send + Sync>>,
+        modal_interaction_factories: HashMap<
+            String,
+            Box<dyn ModalInteractionFactory + Send + Sync>,
+        >,
         webhook_logger: Option<WebhookLogger>,
         fluent_proxy: Arc<FluentProxy>,
     ) -> Self {
@@ -258,14 +283,25 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, context: Context, interaction: Interaction) {
         match interaction {
             Interaction::Command(command_interaction) => {
-                if command_interaction.user.bot { return; };
+                if command_interaction.user.bot {
+                    return;
+                };
 
                 let command_name = command_interaction.data.name.clone();
                 if let Some(command_factory) = self.command_factories.get(command_name.as_str()) {
                     let user_id = command_interaction.user.id.to_string();
                     if !self.running_users.insert(user_id.clone()) {
-                        let error_message = CreateInteractionResponseMessage::new().content(self.fluent_proxy.get_message("common--error--already-running-command", None));
-                        command_interaction.create_response(&context.http, CreateInteractionResponse::Message(error_message)).await.unwrap(); // TODO: Handle error
+                        let error_message = CreateInteractionResponseMessage::new().content(
+                            self.fluent_proxy
+                                .get_message("common--error--already-running-command", None),
+                        );
+                        command_interaction
+                            .create_response(
+                                &context.http,
+                                CreateInteractionResponse::Message(error_message),
+                            )
+                            .await
+                            .unwrap(); // TODO: Handle error
                         return;
                     }
 
@@ -280,8 +316,12 @@ impl EventHandler for Handler {
                         command_interaction
                             .create_followup(
                                 &context.http,
-                                CreateInteractionResponseFollowup::new()
-                                    .content(self.fluent_proxy.get_message("common--error--unexpected-error-occurred", None)),
+                                CreateInteractionResponseFollowup::new().content(
+                                    self.fluent_proxy.get_message(
+                                        "common--error--unexpected-error-occurred",
+                                        None,
+                                    ),
+                                ),
                             )
                             .await
                             .unwrap(); // FIXME: Will panic if already followed up
@@ -294,7 +334,9 @@ impl EventHandler for Handler {
                 }
             }
             Interaction::Modal(interaction) => {
-                if interaction.user.bot { return; };
+                if interaction.user.bot {
+                    return;
+                };
 
                 let modal_name = interaction.data.custom_id.clone();
                 if let Some(modal_interaction_factory) =
@@ -311,8 +353,12 @@ impl EventHandler for Handler {
                         interaction
                             .create_followup(
                                 &context.http,
-                                CreateInteractionResponseFollowup::new()
-                                    .content(self.fluent_proxy.get_message("common--error--unexpected-error-occurred", None)),
+                                CreateInteractionResponseFollowup::new().content(
+                                    self.fluent_proxy.get_message(
+                                        "common--error--unexpected-error-occurred",
+                                        None,
+                                    ),
+                                ),
                             )
                             .await
                             .unwrap(); // FIXME: Will panic if already followed up

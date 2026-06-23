@@ -42,9 +42,14 @@ impl ChatAICharactersUseCase {
         message: &str,
         at: &DateTime<Utc>,
     ) -> Result<UseCaseResult, Error> {
-        let ai_chat_characters = match self.ai_chat_character_repository.get(ai_chat_character_ids.values()) {
+        let ai_chat_characters = match self
+            .ai_chat_character_repository
+            .get(ai_chat_character_ids.values())
+        {
             Ok(ai_chata_characters) => ai_chata_characters,
-            Err(ai_chat_character_repository::Error::CharacterNotFound(_)) => return Err(Error::CharacterNotFound)
+            Err(ai_chat_character_repository::Error::CharacterNotFound(_)) => {
+                return Err(Error::CharacterNotFound);
+            }
         };
 
         if ai_chat_characters.len() < 2 {
@@ -53,7 +58,9 @@ impl ChatAICharactersUseCase {
 
         let mut ai_chat_activity = match self.ai_chat_activity_repository.get(user_id) {
             Ok(ai_chat_activity) => ai_chat_activity,
-            Err(ai_chat_activity_repository::Error::EntryNotFound(_)) => AIChatActivity::with_key(user_id.to_string())
+            Err(ai_chat_activity_repository::Error::EntryNotFound(_)) => {
+                AIChatActivity::with_key(user_id.to_string())
+            }
         };
         let current_chat_count = ai_chat_activity.current_chat_count(at);
         if current_chat_count >= Self::MAX_CHAT_COUNT_PER_USER {
@@ -68,7 +75,10 @@ impl ChatAICharactersUseCase {
                     "title" => ai_chat_character.title(),
                     "characteristics" => ai_chat_character.characteristics().join(", "),
                 ];
-                self.fluent_proxy.get_message("ai-conversation--system-prompt--character", Some(&fluent_args))
+                self.fluent_proxy.get_message(
+                    "ai-conversation--system-prompt--character",
+                    Some(&fluent_args),
+                )
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -76,17 +86,27 @@ impl ChatAICharactersUseCase {
         let fluent_args = fluent_args![
             "characters-message" => characters_message,
         ];
-        let system_prompt = self.fluent_proxy.get_message("ai-conversation--system-prompt--body", Some(&fluent_args));
+        let system_prompt = self
+            .fluent_proxy
+            .get_message("ai-conversation--system-prompt--body", Some(&fluent_args));
 
-        let current_datetime = at.with_timezone(&chrono_tz::Asia::Tokyo).format("%Y-%m-%d %H:%M %:z").to_string();
+        let current_datetime = at
+            .with_timezone(&chrono_tz::Asia::Tokyo)
+            .format("%Y-%m-%d %H:%M %:z")
+            .to_string();
         let fluent_args = fluent_args![
             "theme" => message,
             "current-datetime" => current_datetime,
         ];
-        let user_prompt = self.fluent_proxy.get_message("ai-conversation--user-prompt", Some(&fluent_args));
+        let user_prompt = self
+            .fluent_proxy
+            .get_message("ai-conversation--user-prompt", Some(&fluent_args));
         let messages = [Message::new(Role::User, user_prompt.to_string())];
 
-        let result = self.ai_text_generation_gateway.generate_text(&messages, &system_prompt).await
+        let result = self
+            .ai_text_generation_gateway
+            .generate_text(&messages, &system_prompt)
+            .await
             .map_err(|error| Error::RequestError(error.into()))?;
 
         ai_chat_activity.increment_chat_count(at);

@@ -43,33 +43,50 @@ impl CommandRunner for AIImage {
         let command_option_extarctor = CommandOptionExtractor::new(&options);
         let prompt = command_option_extarctor.get_string("prompt")?;
 
-        let use_case_result = match self.generate_ai_image_use_case
+        let use_case_result = match self
+            .generate_ai_image_use_case
             .run(&user_id, prompt, &now)
-            .await {
+            .await
+        {
             Ok(result) => result,
             Err(UseCaseError::GenerationCountExceeded) => {
-                let error_message = self.fluent_proxy.get_message("ai-image--error--execution-limit-exceeded", None);
-                interaction.create_followup(&context.http, CreateInteractionResponseFollowup::new().content(error_message)).await?;
+                let error_message = self
+                    .fluent_proxy
+                    .get_message("ai-image--error--execution-limit-exceeded", None);
+                interaction
+                    .create_followup(
+                        &context.http,
+                        CreateInteractionResponseFollowup::new().content(error_message),
+                    )
+                    .await?;
                 return Ok(());
             }
-            Err(error) => return Err(error.into())
+            Err(error) => return Err(error.into()),
         };
 
         let fluent_args = fluent_args![
             "prompt" => prompt,
         ];
-        let response_message = self.fluent_proxy.get_message("ai-image--response--body", Some(&fluent_args));
+        let response_message = self
+            .fluent_proxy
+            .get_message("ai-image--response--body", Some(&fluent_args));
 
-        let file_extension = use_case_result.mime_type
+        let file_extension = use_case_result
+            .mime_type
             .strip_prefix("image/")
             .unwrap_or("png");
         let file_name = format!("response.{}", file_extension);
 
         let followup_response = CreateInteractionResponseFollowup::new()
             .content(response_message)
-            .add_file(CreateAttachment::bytes(use_case_result.image_bytes, file_name));
+            .add_file(CreateAttachment::bytes(
+                use_case_result.image_bytes,
+                file_name,
+            ));
 
-        interaction.create_followup(&context.http, followup_response).await?;
+        interaction
+            .create_followup(&context.http, followup_response)
+            .await?;
 
         Ok(())
     }
@@ -97,21 +114,23 @@ impl CommandFactory for Factory {
         "ai-image".to_string()
     }
 
-    fn command_specification(&self) -> CreateCommand
-    {
+    fn command_specification(&self) -> CreateCommand {
         let prompt_option = CreateCommandOption::new(
             CommandOptionType::String,
             "prompt",
-            self.fluent_proxy.get_message("ai-image--command-option--prompt--description", None),
+            self.fluent_proxy
+                .get_message("ai-image--command-option--prompt--description", None),
         )
-            .required(true)
-            .min_length(1)
-            .max_length(250);
+        .required(true)
+        .min_length(1)
+        .max_length(250);
 
         let fluent_args = fluent_args![
             "execution-limit" => ImageGenerationActivity::MAX_COUNT_PER_DAY.to_string()
         ];
-        let command_description = self.fluent_proxy.get_message("ai-image--command--description", Some(&fluent_args));
+        let command_description = self
+            .fluent_proxy
+            .get_message("ai-image--command--description", Some(&fluent_args));
         CreateCommand::new(self.command_name())
             .description(command_description)
             .add_option(prompt_option)

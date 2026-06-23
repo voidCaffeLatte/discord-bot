@@ -94,10 +94,7 @@ impl GeminiClient {
         Ok(types::StructuredTextResponse { data, grounding })
     }
 
-    async fn send_request(
-        &self,
-        request: &dto::Request,
-    ) -> Result<dto::Response, GeminiError> {
+    async fn send_request(&self, request: &dto::Request) -> Result<dto::Response, GeminiError> {
         let request_json = serde_json::to_string_pretty(request)
             .unwrap_or_else(|e| format!("<serialization error: {e}>"));
         tracing::debug!(target: "gemini", body = %request_json, "Gemini API request");
@@ -112,7 +109,9 @@ impl GeminiClient {
             .map_err(|error| GeminiError::HttpRequestFailed(error.into()))?;
 
         let status = response.status();
-        let response_text = response.text().await
+        let response_text = response
+            .text()
+            .await
             .map_err(|error| GeminiError::HttpRequestFailed(error.into()))?;
 
         let response_json = serde_json::from_str::<serde_json::Value>(&response_text)
@@ -156,13 +155,16 @@ impl GeminiClient {
             })
             .collect();
 
-        let system_instruction = request.system_instruction.as_ref().map(|text| dto::Content {
-            parts: Some(vec![dto::Part {
-                text: Some(text.clone()),
-                inline_data: None,
-            }]),
-            role: None,
-        });
+        let system_instruction = request
+            .system_instruction
+            .as_ref()
+            .map(|text| dto::Content {
+                parts: Some(vec![dto::Part {
+                    text: Some(text.clone()),
+                    inline_data: None,
+                }]),
+                role: None,
+            });
 
         let tools = request
             .tools
@@ -202,7 +204,10 @@ impl GeminiClient {
             .as_ref()
             .and_then(|content| content.parts.as_ref())
             .and_then(|parts| {
-                let texts: Vec<&str> = parts.iter().filter_map(|part| part.text.as_deref()).collect();
+                let texts: Vec<&str> = parts
+                    .iter()
+                    .filter_map(|part| part.text.as_deref())
+                    .collect();
                 if texts.is_empty() {
                     None
                 } else {
@@ -227,10 +232,7 @@ impl GeminiClient {
                 })
                 .unwrap_or_default();
 
-            let web_search_queries = metadata
-                .web_search_queries
-                .clone()
-                .unwrap_or_default();
+            let web_search_queries = metadata.web_search_queries.clone().unwrap_or_default();
 
             if chunks.is_empty() && web_search_queries.is_empty() {
                 None
@@ -249,8 +251,8 @@ impl GeminiClient {
         &self,
         response: &dto::Response,
     ) -> Result<(Vec<u8>, String), GeminiError> {
-        use base64::prelude::BASE64_STANDARD;
         use base64::Engine;
+        use base64::prelude::BASE64_STANDARD;
 
         let candidate = response
             .candidates
@@ -265,7 +267,8 @@ impl GeminiClient {
             .and_then(|parts| parts.iter().find_map(|part| part.inline_data.as_ref()))
             .ok_or(GeminiError::NoImage)?;
 
-        let bytes = BASE64_STANDARD.decode(&inline_data.data)
+        let bytes = BASE64_STANDARD
+            .decode(&inline_data.data)
             .map_err(|error| GeminiError::Base64DecodeError(error.into()))?;
         Ok((bytes, inline_data.mime_type.clone()))
     }

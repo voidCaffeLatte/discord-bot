@@ -7,10 +7,7 @@ pub struct PlaylistItem {
 }
 
 impl PlaylistItem {
-    pub fn new(
-        video_id: String,
-        privacy_status: PrivacyStatus,
-    ) -> Self {
+    pub fn new(video_id: String, privacy_status: PrivacyStatus) -> Self {
         Self {
             video_id,
             privacy_status,

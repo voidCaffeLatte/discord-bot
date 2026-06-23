@@ -47,5 +47,8 @@ pub enum Error {
     OptionNotFound(String),
 
     #[error("invalid type")]
-    InvalidType { option_name: String, expected: &'static str },
+    InvalidType {
+        option_name: String,
+        expected: &'static str,
+    },
 }

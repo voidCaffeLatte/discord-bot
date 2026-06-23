@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use domain::value_object::twitch::clip::Clip;
+use std::sync::Arc;
 
 #[async_trait]
 pub trait ClipGateway {

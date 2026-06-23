@@ -8,7 +8,9 @@ pub struct InMemoryAIChatActivityRepository {
 
 impl Default for InMemoryAIChatActivityRepository {
     fn default() -> Self {
-        Self { ai_chat_activities: DashMap::new() }
+        Self {
+            ai_chat_activities: DashMap::new(),
+        }
     }
 }
 
@@ -21,12 +23,14 @@ impl InMemoryAIChatActivityRepository {
 impl AIChatActivityRepository for InMemoryAIChatActivityRepository {
     fn get(&self, user_id: &str) -> Result<AIChatActivity, Error> {
         let user_id = user_id.to_string();
-        self.ai_chat_activities.get(&user_id)
+        self.ai_chat_activities
+            .get(&user_id)
             .map(|entry| entry.clone())
             .ok_or(Error::EntryNotFound(user_id))
     }
 
     fn set(&self, ai_chat_activity: AIChatActivity) {
-        self.ai_chat_activities.insert(ai_chat_activity.user_id().to_string(), ai_chat_activity);
+        self.ai_chat_activities
+            .insert(ai_chat_activity.user_id().to_string(), ai_chat_activity);
     }
 }
