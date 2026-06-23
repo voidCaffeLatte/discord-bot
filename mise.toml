@@ -1,0 +1,8 @@
+[settings]
+idiomatic_version_file_enable_tools = ['rust']
+
+[env]
+_.file = '.env.development'
+
+[tools]
+railway = 'latest'
