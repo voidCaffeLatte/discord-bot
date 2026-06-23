@@ -1,4 +1,3 @@
-use serde_json::json;
 use serenity::all::{Command, Context, CreateInteractionResponse, CreateInteractionResponseFollowup, CreateInteractionResponseMessage, EventHandler, GatewayIntents, Interaction, Ready};
 use serenity::{async_trait, Client};
 use std::collections::HashMap;
@@ -8,7 +7,7 @@ use std::time::Duration;
 use dashmap::DashSet;
 use fluent::FluentResource;
 use fluent::concurrent::FluentBundle;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -20,6 +19,7 @@ use application::use_case::get_random_twitch_clip_use_case::GetRandomTwitchClipU
 use crate::presentation::command;
 use crate::presentation::command::CommandFactory;
 use crate::presentation::modal_interaction::ModalInteractionFactory;
+use crate::presentation::webhook_logger::WebhookLogger;
 use application::use_case::get_random_you_tube_video_use_case::GetRandomYouTubeVideoUseCase;
 use gemini::GeminiClient;
 use infrastructure::gateway::gemini_text_generation_gateway::GeminiTextGenerationGateway;
@@ -194,7 +194,15 @@ async fn main() {
 
     // Run discord bot
 
-    let handler = Handler::new(command_factories, modal_interaction_factories, http_client.clone(), fluent_proxy.clone());
+    let webhook_logger = match std::env::var("LOGGING_WEB_HOOK_URL") {
+        Ok(url) => Some(WebhookLogger::new(http_client.clone(), url)),
+        Err(_) => {
+            warn!("No logging webhook URL provided.");
+            None
+        }
+    };
+
+    let handler = Handler::new(command_factories, modal_interaction_factories, webhook_logger, fluent_proxy.clone());
     let mut client = Client::builder(&token, intents)
         .event_handler(handler)
         .await
@@ -209,7 +217,7 @@ struct Handler {
     command_factories: HashMap<String, Box<dyn CommandFactory + Send + Sync>>,
     modal_interaction_factories: HashMap<String, Box<dyn ModalInteractionFactory + Send + Sync>>,
     running_users: DashSet<String>,
-    http_client: reqwest::Client,
+    webhook_logger: Option<WebhookLogger>,
     fluent_proxy: Arc<FluentProxy>,
 }
 
@@ -217,14 +225,14 @@ impl Handler {
     fn new(
         command_factories: HashMap<String, Box<dyn CommandFactory + Send + Sync>>,
         modal_interaction_factories: HashMap<String, Box<dyn ModalInteractionFactory + Send + Sync>>,
-        http_client: reqwest::Client,
+        webhook_logger: Option<WebhookLogger>,
         fluent_proxy: Arc<FluentProxy>,
     ) -> Self {
         Self {
             command_factories,
             modal_interaction_factories,
             running_users: DashSet::new(),
-            http_client,
+            webhook_logger,
             fluent_proxy,
         }
     }
@@ -265,7 +273,9 @@ impl EventHandler for Handler {
                     if let Err(error) = command.run(&context, &command_interaction).await {
                         error!("Unhandled Error Occurred!: {:?}", error);
 
-                        self.send_log_to_webhook(&format!("## ERROR\n```\n{:?}\n```", error)).await;
+                        if let Some(webhook_logger) = &self.webhook_logger {
+                            webhook_logger.report_error(&error).await;
+                        }
 
                         command_interaction
                             .create_followup(
@@ -294,7 +304,9 @@ impl EventHandler for Handler {
                     if let Err(error) = modal_interaction.run(&context, &interaction).await {
                         error!("Unhandled Error Occurred!: {:?}", error);
 
-                        self.send_log_to_webhook(&format!("## ERROR\n```\n{:?}\n```", error)).await;
+                        if let Some(webhook_logger) = &self.webhook_logger {
+                            webhook_logger.report_error(&error).await;
+                        }
 
                         interaction
                             .create_followup(
@@ -308,28 +320,6 @@ impl EventHandler for Handler {
                 }
             }
             _ => {}
-        };
-    }
-}
-
-impl Handler {
-    // TODO: Split into modules
-    async fn send_log_to_webhook(&self, message: &str) -> ()
-    {
-        let Ok(url) = std::env::var("LOGGING_WEB_HOOK_URL") else {
-            error!("No logging webhook URL provided.");
-            return;
-        };
-
-        let json = json!({ "content": message });
-        let result = self.http_client
-            .post(url)
-            .json(&json)
-            .send()
-            .await;
-
-        if let Err(error) = result {
-            error!("Unhandled Error Occurred!: {}", error);
         };
     }
 }
