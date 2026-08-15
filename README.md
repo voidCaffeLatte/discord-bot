@@ -27,7 +27,7 @@ Fetch random videos from a YouTube channel by providing its handle (e.g. `@chann
 
 ### Random Twitch Clip (`/random-twitch-clip`)
 
-Fetch random clips from a Twitch streamer by providing their user ID. Displays title, view count, duration, creation date, and link.
+Fetch random clips from a Twitch streamer by providing their user ID, with an optional amount to fetch more than one at a time. Displays title, view count, duration, creation date, and link.
 
 ### Utility
 
@@ -36,7 +36,7 @@ Fetch random clips from a Twitch streamer by providing their user ID. Displays t
 
 ## Architecture
 
-The project follows clean architecture principles with a Cargo workspace of four crates:
+The project follows clean architecture principles with a Cargo workspace made up of the root binary crate and five member crates:
 
 ```
 src/              Presentation layer (Discord command & modal handlers)
@@ -44,6 +44,7 @@ application/      Use cases and gateway/repository trait definitions
 domain/           Business models and value objects
 infrastructure/   Concrete implementations (API clients, in-memory repositories)
 common/           Shared utilities (i18n, caching, collections)
+lib/gemini/       Standalone client library for the Google Gemini API
 ```
 
 Key design decisions:
@@ -54,18 +55,21 @@ Key design decisions:
 
 ## Prerequisites
 
-- **Rust** 1.90.0 (pinned via `rust-toolchain.toml`)
+- **Nix** with flakes enabled, and **direnv** — running `direnv allow` in the project root enters the development shell defined in `flake.nix`, which provides the Rust toolchain, `rust-analyzer`, the native build dependencies (`pkg-config`, `openssl`, `libopus`), and the Railway CLI
+- Without Nix, install **Rust** 1.96.1 (pinned via `rust-toolchain.toml`) and the native dependencies yourself
 - API keys for the external services (see [Configuration](#configuration))
 
 ## Configuration
 
 ### Environment Variables
 
-Copy the template and fill in your credentials:
+`.envrc` loads the environment variables through direnv, so copy the template and fill in your credentials:
 
 ```bash
 cp .env.template .env
 ```
+
+`.env` is loaded first, and `.env.development` is loaded afterwards if it exists, so you can keep development-only overrides there without touching `.env`. All `.env*` files except `.env.template` are gitignored.
 
 | Variable | Description |
 |---|---|
@@ -102,31 +106,25 @@ You can override any localized string by creating `resource/locale/ja-JP.overrid
 
 ### Local
 
+With direnv active, the toolchain and the environment variables from `.env` are already loaded in the shell:
+
 ```bash
 cargo build --release
 cargo run
 ```
 
-### Docker
+Without direnv, enter the development shell manually with `nix develop` and load the environment variables yourself.
 
-**Production:**
+### Docker
 
 ```bash
 docker build -t discord-bot .
 docker run --env-file .env discord-bot
 ```
 
-**Development (with Docker Compose):**
-
-```bash
-docker compose up --build
-```
-
-The development setup mounts the project directory and caches Cargo dependencies in a named volume for faster rebuilds.
-
 ### Railway
 
-The project includes a `.railwayignore` for deployment on [Railway](https://railway.app/).
+The project includes a `.railwayignore` for deployment on [Railway](https://railway.app/). The Railway CLI is available inside the Nix development shell.
 
 ## Tech Stack
 
@@ -135,12 +133,13 @@ The project includes a `.railwayignore` for deployment on [Railway](https://rail
 | Language | Rust (Edition 2024) |
 | Discord Library | Serenity |
 | Async Runtime | Tokio |
-| AI Text Generation | Google Gemini API |
-| AI Image Generation | OpenAI API |
+| AI Text Generation | Google Gemini API (`gemini-3-flash-preview`) |
+| AI Image Generation | Google Gemini API (`gemini-3.1-flash-image-preview`) |
 | HTTP Client | reqwest |
 | Data Storage | In-memory (DashMap) |
 | Localization | Fluent (Japanese) |
 | Logging | tracing / tracing-subscriber |
+| Development Environment | Nix flake + direnv |
 
 ---
 
