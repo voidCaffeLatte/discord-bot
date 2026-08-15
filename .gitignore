@@ -1,8 +1,7 @@
-**/.env*
+.env*
 !.env.template
 !.envrc
 /.direnv/
 /target/
 /resource/locale/*.override.ftl
 /resource/character.toml
-/.idea/

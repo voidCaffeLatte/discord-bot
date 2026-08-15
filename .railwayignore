@@ -1,11 +1,5 @@
-/target/
-/.env.development
-/.env.template
-/.envrc
-/flake.nix
-/flake.lock
+.env*
 /.direnv/
-/docker-compose.yml
-/Dockerfile.development
+/target/
+flake.*
 /resource/**/*.template
-/.idea/
