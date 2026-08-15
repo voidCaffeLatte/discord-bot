@@ -1,4 +1,3 @@
-pub mod ai_chat;
 pub mod ai_chat_activity_repository;
 pub mod ai_chat_character_repository;
 pub mod ai_chat_history_repository;

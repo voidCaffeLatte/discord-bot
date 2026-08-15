@@ -9,7 +9,6 @@ A feature-rich Discord bot written in Rust that brings AI-powered character chat
 Have one-on-one conversations with customizable AI characters. Each character has a name, title, and personality traits defined in a configuration file.
 
 - Persistent chat history per user per character
-- Relationship system with dynamic likability tracking that influences character responses
 - Web reference citations included in AI responses
 - Daily usage limit per user
 
@@ -50,7 +49,7 @@ lib/gemini/       Standalone client library for the Google Gemini API
 Key design decisions:
 
 - **Dependency inversion** — Traits are defined in `application/`, implementations live in `infrastructure/`
-- **In-memory storage** — All state (chat history, activity counters, relationships) is currently held in `DashMap` as a provisional implementation without transaction management. A migration to an RDBMS with proper transaction support is planned.
+- **In-memory storage** — All state (chat history, activity counters) is currently held in `DashMap` as a provisional implementation without transaction management. A migration to an RDBMS with proper transaction support is planned.
 - **Localization** — All user-facing strings are managed via Fluent (`.ftl` files) with Japanese as the primary locale
 
 ## Prerequisites

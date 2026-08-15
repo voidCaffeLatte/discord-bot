@@ -1,7 +1,4 @@
-use crate::gateway::ai_structured_text_generation_gateway::AIStructuredTextGenerationGateway;
-use crate::gateway::ai_text_generation_gateway::{Message, Role};
-use crate::repository::ai_chat::character::relationship_repository;
-use crate::repository::ai_chat::character::relationship_repository::RelationshipRepository;
+use crate::gateway::ai_text_generation_gateway::{AITextGenerationGateway, Message, Role};
 use crate::repository::ai_chat_activity_repository::AIChatActivityRepository;
 use crate::repository::ai_chat_character_repository::AIChatCharacterRepository;
 use crate::repository::ai_chat_history_repository::AIChatHistoryRepository;
@@ -10,22 +7,18 @@ use crate::repository::{
 };
 use chrono::{DateTime, Utc};
 use common::fluent_proxy::FluentProxy;
-use domain::model::ai_chat::character::relationship::Relationship;
 use domain::model::ai_chat_activity::AIChatActivity;
 use domain::model::ai_chat_character;
 use domain::model::ai_chat_history::{AIChatHistory, ChatEntry};
-use domain::value_object::ai_chat::character::likability::Likability;
 use domain::value_object::ai_text::AIText;
 use fluent::fluent_args;
 use std::sync::Arc;
 
 pub struct ChatAIUseCase {
-    ai_text_generation_gateway:
-        Arc<dyn AIStructuredTextGenerationGateway<dto::Response> + Send + Sync>,
+    ai_text_generation_gateway: Arc<dyn AITextGenerationGateway + Send + Sync>,
     ai_chat_character_repository: Arc<dyn AIChatCharacterRepository + Send + Sync>,
     ai_chat_history_repository: Arc<dyn AIChatHistoryRepository + Send + Sync>,
     ai_chat_activity_repository: Arc<dyn AIChatActivityRepository + Send + Sync>,
-    ai_chat_character_relationship_repository: Arc<dyn RelationshipRepository + Send + Sync>,
     fluent_proxy: Arc<FluentProxy>,
 }
 
@@ -33,13 +26,10 @@ impl ChatAIUseCase {
     pub const MAX_CHAT_COUNT_PER_USER: u32 = 10;
 
     pub fn new(
-        ai_text_generation_gateway: Arc<
-            dyn AIStructuredTextGenerationGateway<dto::Response> + Send + Sync,
-        >,
+        ai_text_generation_gateway: Arc<dyn AITextGenerationGateway + Send + Sync>,
         ai_chat_character_repository: Arc<dyn AIChatCharacterRepository + Send + Sync>,
         ai_chat_history_repository: Arc<dyn AIChatHistoryRepository + Send + Sync>,
         ai_chat_activity_repository: Arc<dyn AIChatActivityRepository + Send + Sync>,
-        ai_chat_character_relationship_repository: Arc<dyn RelationshipRepository + Send + Sync>,
         fluent_proxy: Arc<FluentProxy>,
     ) -> Self {
         Self {
@@ -47,7 +37,6 @@ impl ChatAIUseCase {
             ai_chat_character_repository,
             ai_chat_history_repository,
             ai_chat_activity_repository,
-            ai_chat_character_relationship_repository,
             fluent_proxy,
         }
     }
@@ -105,16 +94,6 @@ impl ChatAIUseCase {
             })
             .collect();
 
-        let mut relationship = match self
-            .ai_chat_character_relationship_repository
-            .get(user_id, ai_chat_character.id())
-        {
-            Ok(relationship) => relationship,
-            Err(relationship_repository::Error::EntryNotFound(_, _)) => {
-                Relationship::with_key(user_id.to_string(), ai_chat_character.id().clone())
-            }
-        };
-
         let current_datetime = at
             .with_timezone(&chrono_tz::Asia::Tokyo)
             .format("%Y-%m-%d %H:%M %:z")
@@ -122,7 +101,6 @@ impl ChatAIUseCase {
         let fluent_args = fluent_args![
             "name" => user_name,
             "message" => message,
-            "likability" => relationship.likability().value(),
             "current-datetime" => current_datetime,
         ];
         let user_prompt = self
@@ -141,9 +119,6 @@ impl ChatAIUseCase {
             "name" => ai_chat_character.character_name(),
             "title" => ai_chat_character.title(),
             "characteristics" => ai_chat_character.characteristics().join(", "),
-            "base-likability" => Likability::BASE,
-            "min-likability" => Likability::MIN,
-            "max-likability" => Likability::MAX
         ];
         let system_prompt = self
             .fluent_proxy
@@ -151,31 +126,22 @@ impl ChatAIUseCase {
 
         let result = self
             .ai_text_generation_gateway
-            .generate_structured_text(&messages, &system_prompt)
+            .generate_text(&messages, &system_prompt)
             .await
             .map_err(|error| UseCaseError::RequestError(error.into()))?;
-        let (response, web_references) = result.into_parts();
-
-        relationship
-            .change_likability(response.likability_change)
-            .map_err(|error| UseCaseError::InvalidLikability(error.into()))?;
-        self.ai_chat_character_relationship_repository
-            .set(relationship);
 
         ai_chat_activity.increment_chat_count(at);
         self.ai_chat_activity_repository.set(ai_chat_activity);
 
         ai_chat_history.add_chat_entry(ChatEntry {
             request: message.to_string(),
-            response: response.message.clone(),
+            response: result.text().to_owned(),
         });
         self.ai_chat_history_repository.set(ai_chat_history);
 
-        let ai_text = AIText::new(response.message, web_references);
-
         Ok(UseCaseResult {
             ai_character_name: ai_chat_character.display_name().to_string(),
-            ai_text,
+            ai_text: result,
         })
     }
 }
@@ -193,25 +159,6 @@ pub enum UseCaseError {
     #[error("character is not found")]
     CharacterNotFound,
 
-    #[error("invalid likability")]
-    InvalidLikability(#[source] anyhow::Error),
-
     #[error("failed to generate AI chat response")]
     RequestError(#[source] anyhow::Error),
-}
-
-mod dto {
-    use schemars::JsonSchema;
-
-    #[derive(Debug, serde::Deserialize, serde::Serialize, JsonSchema)]
-    pub struct Response {
-        #[schemars(
-            description = "Response message by ai chat character",
-            example = "Hello!"
-        )]
-        pub message: String,
-
-        #[schemars(description = "Amount of change in likability based on messages from users")]
-        pub likability_change: i32,
-    }
 }
