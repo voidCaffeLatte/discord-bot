@@ -132,7 +132,7 @@ The project includes a `.railwayignore` for deployment on [Railway](https://rail
 | Language | Rust (Edition 2024) |
 | Discord Library | Serenity |
 | Async Runtime | Tokio |
-| AI Text Generation | Google Gemini API (`gemini-3-flash-preview`) |
+| AI Text Generation | Google Gemini API (`gemini-3.6-flash`) |
 | AI Image Generation | Google Gemini API (`gemini-3.1-flash-image-preview`) |
 | HTTP Client | reqwest |
 | Data Storage | In-memory (DashMap) |

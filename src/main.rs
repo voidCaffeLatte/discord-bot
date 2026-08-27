@@ -73,7 +73,7 @@ async fn main() {
     let gemini_text_client = GeminiClient::new(
         gemini_api_key.clone(),
         reqwest::Client::new(),
-        "gemini-3-flash-preview".to_string(),
+        "gemini-3.6-flash".to_string(),
     );
     let ai_text_generation_gateway = Arc::new(GeminiTextGenerationGateway::new(gemini_text_client));
 
