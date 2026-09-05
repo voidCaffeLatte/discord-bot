@@ -71,7 +71,7 @@ cp .env.template .env
 `.env` is loaded first, and `.env.development` is loaded afterwards if it exists, so you can keep development-only overrides there without touching `.env`. All `.env*` files except `.env.template` are gitignored.
 
 | Variable | Description |
-|---|---|
+| --- | --- |
 | `DISCORD_TOKEN` | Discord bot token |
 | `DISCORD_BOT_APPLICATION_ID` | Discord application ID |
 | `GEMINI_API_KEY` | Google Gemini API key |
@@ -128,11 +128,11 @@ The project includes a `.railwayignore` for deployment on [Railway](https://rail
 ## Tech Stack
 
 | Category | Technology |
-|---|---|
+| --- | --- |
 | Language | Rust (Edition 2024) |
 | Discord Library | Serenity |
 | Async Runtime | Tokio |
-| AI Text Generation | Google Gemini API (`gemini-3.6-flash`) |
+| AI Text Generation | Google Gemini API (`gemini-3.8-flash`) |
 | AI Image Generation | Google Gemini API (`gemini-3.1-flash-image-preview`) |
 | HTTP Client | reqwest |
 | Data Storage | In-memory (DashMap) |
